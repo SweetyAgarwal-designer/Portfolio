@@ -5283,6 +5283,13 @@ body[data-shell="mobile"] .taskbar {
   display: none;
 }
 
+body[data-shell="tablet"] .ocean-backdrop,
+body[data-shell="tablet"] .fish-studio-panel,
+body[data-shell="mobile"] .ocean-backdrop,
+body[data-shell="mobile"] .fish-studio-panel {
+  display: none;
+}
+
 body[data-shell="tablet"] .tablet-hub {
   display: grid;
   gap: 20px;
@@ -5304,37 +5311,6 @@ body[data-shell="mobile"] .mobile-hub {
     radial-gradient(circle at 18% 16%, rgba(105, 139, 255, 0.22), transparent 20%),
     radial-gradient(circle at 84% 12%, rgba(160, 108, 255, 0.16), transparent 18%),
     linear-gradient(180deg, #111521 0%, #171d2c 42%, #0f1320 100%);
-}
-
-body[data-shell="tablet"] .fish-studio-panel {
-  width: 100%;
-  max-height: none;
-  overflow: visible;
-}
-
-body[data-shell="mobile"] .fish-studio-panel {
-  width: 100%;
-  max-height: none;
-  overflow: visible;
-  padding: 14px;
-}
-
-body[data-shell="mobile"] .fish-studio-header h2 {
-  font-size: 1.24rem;
-}
-
-body[data-shell="mobile"] .fish-preset-row {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-body[data-shell="mobile"] .fish-brush-row,
-body[data-shell="mobile"] .fish-canvas-actions {
-  flex-direction: column;
-}
-
-body[data-shell="mobile"] .fish-size-field,
-body[data-shell="mobile"] .fish-canvas-actions .action-button {
-  width: 100%;
 }
 
 body[data-shell="tablet"] .cursor-glow,

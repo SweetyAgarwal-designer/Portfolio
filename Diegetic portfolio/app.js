@@ -15,8 +15,6 @@ const systemSurface = document.getElementById("system-surface");
 const customFishLayer = document.getElementById("custom-fish-layer");
 const fishStudioPanel = document.getElementById("fish-studio-panel");
 const fishStudioDesktopSlot = document.getElementById("fish-studio-desktop-slot");
-const fishStudioTabletSlot = document.getElementById("fish-studio-tablet-slot");
-const fishStudioMobileSlot = document.getElementById("fish-studio-mobile-slot");
 const fishDesignerCanvas = document.getElementById("fish-designer-canvas");
 const fishPresetRow = document.getElementById("fish-preset-row");
 const fishColorRow = document.getElementById("fish-color-row");
@@ -1153,23 +1151,17 @@ function updateAdaptiveShell() {
   const shellMode = getShellMode();
   body.dataset.shell = shellMode;
   setCursorMode(shellMode === "desktop" ? "default" : "hidden");
-  moveFishStudioPanel(shellMode);
+  moveFishStudioPanel();
   syncTaskbarState();
 }
 
-function moveFishStudioPanel(shellMode = getShellMode()) {
-  if (!fishStudioPanel) {
+function moveFishStudioPanel() {
+  if (!fishStudioPanel || !fishStudioDesktopSlot) {
     return;
   }
 
-  const targetSlot = shellMode === "mobile"
-    ? fishStudioMobileSlot
-    : shellMode === "tablet"
-      ? fishStudioTabletSlot
-      : fishStudioDesktopSlot;
-
-  if (targetSlot && fishStudioPanel.parentElement !== targetSlot) {
-    targetSlot.appendChild(fishStudioPanel);
+  if (fishStudioPanel.parentElement !== fishStudioDesktopSlot) {
+    fishStudioDesktopSlot.appendChild(fishStudioPanel);
   }
 }
 
