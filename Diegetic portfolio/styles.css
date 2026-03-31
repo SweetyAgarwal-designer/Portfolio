@@ -6126,8 +6126,6 @@ body[data-theme="dark"][data-shell="mobile"] .mobile-hub {
   }
 
   .studio-scene {
-    position: relative;
-    min-height: 100vh;
     padding: 14px;
   }
 
