@@ -12,17 +12,16 @@ const mobileDock = document.getElementById("mobile-dock");
 const studioScene = document.getElementById("studio-scene");
 const desktopShell = document.getElementById("desktop-shell");
 const systemSurface = document.getElementById("system-surface");
+const oceanIllustration = document.querySelector(".ocean-illustration");
 const customFishLayer = document.getElementById("custom-fish-layer");
 const fishStudioPanel = document.getElementById("fish-studio-panel");
 const fishStudioDesktopSlot = document.getElementById("fish-studio-desktop-slot");
 const fishDesignerCanvas = document.getElementById("fish-designer-canvas");
 const fishPresetRow = document.getElementById("fish-preset-row");
-const fishColorRow = document.getElementById("fish-color-row");
 const fishNameInput = document.getElementById("fish-name-input");
-const fishBrushSize = document.getElementById("fish-brush-size");
 const saveFishButton = document.getElementById("save-fish-button");
-const clearFishButton = document.getElementById("clear-fish-button");
-const fishStudioNote = document.getElementById("fish-studio-note");
+const oceanAudioToggle = document.getElementById("ocean-audio-toggle");
+const oceanAudioStatus = document.getElementById("ocean-audio-status");
 const sceneScreenOverlay = document.getElementById("scene-screen-overlay");
 const scenePanelCard = document.getElementById("scene-panel-card");
 const scenePanelContent = document.getElementById("scene-panel-content");
@@ -47,6 +46,9 @@ const profile = {
   profileImage: "https://pps.services.adobe.com/api/profile/90A51F5764BF70F70A495C36@65532a2e63c0a029495ea7.e/image/05bfb27a-6ff1-46e8-b8dc-bf4c6f96208b/276"
 };
 
+const defaultEmailSubject = `Portfolio inquiry for ${profile.name}`;
+const defaultEmailMessage = `Hi ${profile.firstName}, I'd love to discuss a project around UX/UI, branding, packaging, or visual storytelling.`;
+
 const desktopApps = [
   { id: "projects", label: "Works", subtitle: "All projects", icon: "&#xE8B7;" },
   { id: "gallery", label: "Gallery", subtitle: "Photography archive", icon: "&#xE91B;" },
@@ -58,40 +60,87 @@ const desktopApps = [
 
 const adaptiveDockApps = ["home", "projects", "gallery", "resume", "contact"];
 const featuredAdaptiveProjects = ["digital-library", "nammamove", "aera", "kanpeki"];
-const fishStorageKey = "sweety-ocean-fish";
+const fishStorageKey = "sweety-ocean-fish-v5";
+const legacyFishStorageKeys = ["sweety-ocean-fish-v2", "sweety-ocean-fish-v3", "sweety-ocean-fish-v4"];
+const fishMonthlyLimit = 4;
 const fishCanvasSize = { width: 360, height: 220 };
+const fishPresetThumbnailSize = { width: 248, height: 160 };
+const fishPresetAssets = window.fishPresetAssets || {};
+const oceanAmbienceStorageKey = "sweety-ocean-ambience-muted";
+const oceanAmbienceMaxGain = 0.2;
 const fishPresets = [
   {
-    id: "moon-koi",
-    label: "Moon Koi",
-    starterName: "Moonbeam",
-    shape: "koi",
-    body: "#ffb877",
-    fin: "#ffe8c1",
-    accent: "#f17c70",
-    stripe: "#ffd89e"
+    id: "golden-bloom",
+    label: "Golden Bloom",
+    starterName: "Bloom",
+    assetKey: "golden-bloom",
+    accent: "#f2c93e"
   },
   {
-    id: "reef-dart",
-    label: "Reef Dart",
-    starterName: "Ripple",
-    shape: "dart",
-    body: "#54d6d2",
-    fin: "#cbfff5",
-    accent: "#146c7f",
-    stripe: "#8debe2"
+    id: "ember-glide",
+    label: "Ember Glide",
+    starterName: "Ember",
+    assetKey: "ember-glide",
+    accent: "#ff7a37"
   },
   {
-    id: "garden-fan",
-    label: "Garden Fan",
-    starterName: "Coralie",
-    shape: "fan",
-    body: "#f48ca8",
-    fin: "#ffe5b7",
-    accent: "#7c3d8d",
-    stripe: "#ffd2eb"
+    id: "cobalt-drift",
+    label: "Cobalt Drift",
+    starterName: "Cobalt",
+    assetKey: "cobalt-drift",
+    accent: "#6b83d6"
+  },
+  {
+    id: "midnight-banner",
+    label: "Midnight Banner",
+    starterName: "Banner",
+    assetKey: "midnight-banner",
+    accent: "#4b5f97"
+  },
+  {
+    id: "ink-darter",
+    label: "Ink Darter",
+    starterName: "Inkie",
+    assetKey: "ink-darter",
+    accent: "#425d9e"
+  },
+  {
+    id: "pearl-sail",
+    label: "Pearl Sail",
+    starterName: "Pearl",
+    assetKey: "pearl-sail",
+    accent: "#9ec9ea"
+  },
+  {
+    id: "seafoam-wisp",
+    label: "Seafoam Wisp",
+    starterName: "Wisp",
+    assetKey: "seafoam-wisp",
+    accent: "#99dce2"
+  },
+  {
+    id: "lagoon-ribbon",
+    label: "Lagoon Ribbon",
+    starterName: "Ribbon",
+    assetKey: "lagoon-ribbon",
+    accent: "#8fb7c8"
+  },
+  {
+    id: "tangerine-flicker",
+    label: "Tangerine Flicker",
+    starterName: "Flicker",
+    assetKey: "tangerine-flicker",
+    accent: "#ff9800"
+  },
+  {
+    id: "ruby-petal",
+    label: "Ruby Petal",
+    starterName: "Ruby",
+    assetKey: "ruby-petal",
+    accent: "#c8465a"
   }
 ];
+const fishAssetCache = new Map();
 const fishBrushPalette = [
   "#fff4cf",
   "#ff9a76",
@@ -109,6 +158,19 @@ const fishStudioState = {
   activeStroke: null,
   activePointerId: null,
   savedFish: []
+};
+const oceanAmbienceState = {
+  enabled: true,
+  hasStarted: false,
+  masterGain: null
+};
+const cursorState = {
+  currentX: window.innerWidth / 2,
+  currentY: window.innerHeight / 2,
+  targetX: window.innerWidth / 2,
+  targetY: window.innerHeight / 2,
+  frameId: 0,
+  initialized: false
 };
 
 const projectData = [
@@ -517,10 +579,14 @@ let entrySpeechCleanupTimer = 0;
 let entrySpeechSequence = 0;
 let activeEntrySpeechResolver = null;
 
+const residentCompanion = {
+  name: "Miso"
+};
+
 const entryIntroScreen = {
-  title: "Calm work. Clear stories.",
-  note: "A quick welcome before you step inside.",
-  voiceText: "Calm work. Clear stories. A quick welcome before you step inside.",
+  title: "Come in. I'll walk with you.",
+  note: "A soft hello before you step inside.",
+  voiceText: `Hi. I'm ${residentCompanion.name}. Come in. I'll stay with you for a moment and help you get your bearings.`,
   pose: "tilt"
 };
 
@@ -537,23 +603,23 @@ function getResidentGuideLines() {
   return [
     {
       target: "workspace",
-      message: `Welcome, ${visitorName}.`
+      message: `Hi ${visitorName}, I'm ${residentCompanion.name}. I'm glad you're here.`
     },
     {
       target: "works",
-      message: "Works start here."
+      message: "If you want the quickest feel for Sweety's work, start with Works."
     },
     {
       target: "navigation",
-      message: "Use the dock below to jump between works, gallery, resume, and contact."
+      message: "The dock keeps the main rooms close: works, gallery, resume, and contact."
     },
     {
       target: "workspace",
-      message: "Each section opens in its own window, so you can move through the portfolio at your own pace."
+      message: "Open whatever catches your eye. Nothing here needs to be followed in order."
     },
     {
       target: "workspace",
-      message: "I will disappear now."
+      message: "I'll leave you to explore."
     }
   ];
 }
@@ -779,7 +845,7 @@ const appContent = {
             I'd love to hear what you're imagining and where design can help.
           </p>
           <div class="contact-links">
-            ${renderExternalLink(`mailto:${profile.email}`, "Email", "&#xE8A8;")}
+            ${renderExternalLink(buildMailtoHref(), "Email", "&#xE8A8;")}
             ${renderExternalLink("tel:+918920183531", "Call", "&#xE717;", true)}
             ${renderExternalLink(profile.behanceUrl, "Behance", "&#xE8A7;", true)}
             ${renderExternalLink(profile.resumeUrl, "Resume PDF", "&#xE8A5;", true)}
@@ -792,17 +858,17 @@ const appContent = {
           <form class="contact-form">
             <label>
               Name
-              <input type="text" placeholder="Your name">
+              <input type="text" name="name" placeholder="Your name">
             </label>
             <label>
               Email
-              <input type="email" placeholder="you@example.com">
+              <input type="email" name="email" placeholder="you@example.com">
             </label>
             <label>
               Project note
-              <textarea placeholder="Tell me a little about your idea.">Hi Sweety, I'd love to discuss a project around UX/UI, branding, packaging, or visual storytelling.</textarea>
+              <textarea name="projectNote" placeholder="Tell me a little about your idea.">${defaultEmailMessage}</textarea>
             </label>
-            <button type="button">
+            <button type="submit">
               ${renderUiIcon("&#xE8A8;")}
               <span>Start conversation</span>
             </button>
@@ -1224,7 +1290,7 @@ const scenePanels = {
     <h2>Contact</h2>
     <p>Reach out for interfaces, identity systems, packaging directions, editorial work, or visual storytelling projects.</p>
     <div class="scene-contact-list">
-      ${renderExternalLink(`mailto:${profile.email}`, "Email me", "&#xE8A8;")}
+      ${renderExternalLink(buildMailtoHref(), "Email me", "&#xE8A8;")}
       ${renderExternalLink("tel:+918920183531", "Call me", "&#xE717;", true)}
       ${renderExternalLink(profile.behanceUrl, "Behance profile", "&#xE8A7;", true)}
     </div>
@@ -1485,14 +1551,35 @@ function pickResidentSpeechVoice() {
     }
 
     if (
+      name.includes("natural")
+      || name.includes("neural")
+      || name.includes("enhanced")
+      || name.includes("premium")
+      || name.includes("online")
+    ) {
+      score += 16;
+    }
+
+    if (
       name.includes("heera")
       || name.includes("priya")
+      || name.includes("neha")
       || name.includes("samantha")
       || name.includes("zira")
       || name.includes("aria")
+      || name.includes("ava")
+      || name.includes("serena")
       || name.includes("female")
     ) {
       score += 18;
+    }
+
+    if (
+      name.includes("robot")
+      || name.includes("espeak")
+      || name.includes("compact")
+    ) {
+      score -= 18;
     }
 
     return score;
@@ -1579,9 +1666,9 @@ function speakResidentGuide(text, catRoot) {
     utterance.lang = "en-IN";
   }
 
-  utterance.rate = 1.06;
-  utterance.pitch = 1.28;
-  utterance.volume = 0.96;
+  utterance.rate = 0.96;
+  utterance.pitch = 1.08;
+  utterance.volume = 0.94;
   utterance.onstart = () => {
     if (sequence !== residentSpeechSequence || !residentMascot) {
       return;
@@ -1635,7 +1722,7 @@ function getEntryVoiceLine() {
     return entryIntroScreen.voiceText;
   }
 
-  return "Tell me your name to enter.";
+  return "Tell me your name, and I'll let you in.";
 }
 
 function clearEntrySpeakingState() {
@@ -1729,9 +1816,9 @@ function speakEntryLine(text, catRoot) {
     utterance.lang = "en-IN";
   }
 
-  utterance.rate = 1.1;
-  utterance.pitch = 1.36;
-  utterance.volume = 0.92;
+  utterance.rate = 1;
+  utterance.pitch = 1.12;
+  utterance.volume = 0.94;
   utterance.onstart = begin;
   utterance.onend = () => conclude("ended");
   utterance.onerror = () => conclude("error");
@@ -1899,20 +1986,6 @@ function renderEntryProgress() {
 function renderEntrySkipButton(label = "Skip intro") {
   return `
     <button class="entry-skip" type="button" data-entry-skip>${escapeHtml(label)}</button>
-  `;
-}
-
-function renderEntryVoicePanel() {
-  return `
-    <div class="entry-voice-shell" aria-hidden="true">
-      <div class="entry-voice-meta">
-        <span class="cat-voice-dot" aria-hidden="true"></span>
-        <span>Soft cat voice</span>
-        <span class="cat-voice-bars" aria-hidden="true">
-          <span></span><span></span><span></span>
-        </span>
-      </div>
-    </div>
   `;
 }
 
@@ -2270,13 +2343,6 @@ function mountResidentMascot() {
 
   residentMascot.innerHTML = `
     <div class="resident-guide-bubble" id="resident-guide-bubble" aria-hidden="true">
-      <div class="resident-guide-voice" aria-hidden="true">
-        <span class="cat-voice-dot"></span>
-        <span>Soft cat voice</span>
-        <span class="cat-voice-bars">
-          <span></span><span></span><span></span>
-        </span>
-      </div>
       <p class="resident-guide-copy" id="resident-guide-copy"></p>
       <div class="resident-guide-actions">
         <button class="resident-guide-skip" type="button" data-resident-skip>Skip guide</button>
@@ -2501,24 +2567,26 @@ function initializeFishStudio() {
     !fishStudioPanel
     || !fishDesignerCanvas
     || !fishPresetRow
-    || !fishColorRow
     || !fishNameInput
-    || !fishBrushSize
     || !saveFishButton
-    || !clearFishButton
   ) {
     return;
   }
 
+  primeFishPresetAssets();
   renderFishPresetButtons();
-  renderFishColorButtons();
-  fishBrushSize.value = String(fishStudioState.brushSize);
   fishNameInput.placeholder = getActiveFishPreset().starterName;
   if (!fishNameInput.value.trim()) {
     fishNameInput.value = getActiveFishPreset().starterName;
   }
 
+  if (oceanIllustration && !oceanIllustration.complete) {
+    oceanIllustration.addEventListener("load", drawFishDesignerCanvas, { once: true });
+  }
+
+  cleanupLegacyOceanFishStorage();
   fishStudioState.savedFish = loadSavedOceanFish();
+  persistOceanFish();
   renderCustomFishSchool();
   drawFishDesignerCanvas();
 
@@ -2534,20 +2602,8 @@ function initializeFishStudio() {
     setActiveFishPreset(presetButton.dataset.fishPreset);
   });
 
-  fishColorRow.addEventListener("click", event => {
-    const colorButton = event.target.closest("[data-fish-color]");
-    if (!colorButton) return;
-    fishStudioState.brushColor = colorButton.dataset.fishColor;
-    renderFishColorButtons();
-    drawFishDesignerCanvas();
-  });
-
   fishNameInput.addEventListener("input", () => {
     drawFishDesignerCanvas();
-  });
-
-  fishBrushSize.addEventListener("input", () => {
-    fishStudioState.brushSize = clamp(Number(fishBrushSize.value) || 7, 2, 16);
   });
 
   fishDesignerCanvas.addEventListener("pointerdown", beginFishSketch);
@@ -2555,12 +2611,6 @@ function initializeFishStudio() {
   fishDesignerCanvas.addEventListener("pointerup", finishFishSketch);
   fishDesignerCanvas.addEventListener("pointercancel", finishFishSketch);
   fishDesignerCanvas.addEventListener("pointerleave", finishFishSketch);
-
-  clearFishButton.addEventListener("click", () => {
-    fishStudioState.strokes = [];
-    drawFishDesignerCanvas();
-    updateFishStudioMessage("Canvas cleared. Sketch new scales, fins, or patterns.", "neutral");
-  });
 
   saveFishButton.addEventListener("click", saveFishToOcean);
 }
@@ -2588,7 +2638,6 @@ function setActiveFishPreset(presetId) {
   fishNameInput.placeholder = nextPreset.starterName;
   renderFishPresetButtons();
   drawFishDesignerCanvas();
-  updateFishStudioMessage(`${nextPreset.label} is ready for your custom pattern.`, "neutral");
 }
 
 function renderFishPresetButtons() {
@@ -2600,26 +2649,13 @@ function renderFishPresetButtons() {
       type="button"
       data-fish-preset="${preset.id}"
       aria-pressed="${preset.id === fishStudioState.presetId ? "true" : "false"}"
-      style="--preset-body:${preset.body}; --preset-fin:${preset.fin}; --preset-accent:${preset.accent};"
+      style="--preset-accent:${preset.accent};"
     >
-      <span class="fish-preset-badge" aria-hidden="true"></span>
+      <span class="fish-preset-thumb" aria-hidden="true">
+        <img class="fish-preset-art" src="${escapeAttribute(getFishPresetThumbnailSource(preset))}" alt="">
+      </span>
       <span>${escapeHtml(preset.label)}</span>
     </button>
-  `).join("");
-}
-
-function renderFishColorButtons() {
-  if (!fishColorRow) return;
-
-  fishColorRow.innerHTML = fishBrushPalette.map(color => `
-    <button
-      class="fish-color-button${color === fishStudioState.brushColor ? " is-active" : ""}"
-      type="button"
-      data-fish-color="${color}"
-      aria-label="Select ${color} brush color"
-      aria-pressed="${color === fishStudioState.brushColor ? "true" : "false"}"
-      style="--fish-brush-color:${color};"
-    ></button>
   `).join("");
 }
 
@@ -2683,14 +2719,42 @@ function drawFishDesignerCanvas() {
     showShadow: false
   });
 
-  if (!fishStudioState.strokes.length) {
+  const activeImage = getFishPresetImageRecord(getActiveFishPreset());
+  if (!activeImage?.loaded) {
     ctx.fillStyle = "rgba(235, 250, 255, 0.86)";
     ctx.font = '500 12px "Inter", "Segoe UI", sans-serif';
-    ctx.fillText("Sketch scales, stripes, fins, or tiny details directly on the fish.", 18, 200);
+    ctx.fillText("Loading the imported fish artwork...", 18, 200);
   }
 }
 
 function drawFishCanvasBackdrop(ctx) {
+  if (oceanIllustration?.complete && oceanIllustration.naturalWidth > 0 && oceanIllustration.naturalHeight > 0) {
+    drawCoverImage(
+      ctx,
+      oceanIllustration,
+      0,
+      0,
+      fishCanvasSize.width,
+      fishCanvasSize.height
+    );
+    return;
+  }
+
+  drawFishCanvasFallbackBackdrop(ctx);
+}
+
+function drawCoverImage(ctx, image, x, y, width, height) {
+  const imageWidth = Math.max(image?.naturalWidth || image?.width || 1, 1);
+  const imageHeight = Math.max(image?.naturalHeight || image?.height || 1, 1);
+  const scale = Math.max(width / imageWidth, height / imageHeight);
+  const drawWidth = imageWidth * scale;
+  const drawHeight = imageHeight * scale;
+  const drawX = x + ((width - drawWidth) / 2);
+  const drawY = y + ((height - drawHeight) / 2);
+  ctx.drawImage(image, drawX, drawY, drawWidth, drawHeight);
+}
+
+function drawFishCanvasFallbackBackdrop(ctx) {
   const background = ctx.createLinearGradient(0, 0, 0, fishCanvasSize.height);
   background.addColorStop(0, "#7ce1ea");
   background.addColorStop(0.52, "#2ca9cb");
@@ -2903,28 +2967,440 @@ function drawCanvasMiniFish(ctx, centerX, centerY, scale, color) {
   ctx.restore();
 }
 
+function getFishPresetAssetSource(preset) {
+  return fishPresetAssets[preset.assetKey] || "";
+}
+
+function getFishPresetThumbnailSource(preset) {
+  const record = ensureFishPresetImage(preset);
+  return record?.thumbSource || getFishPresetAssetSource(preset);
+}
+
+function primeFishPresetAssets() {
+  fishPresets.forEach(preset => {
+    ensureFishPresetImage(preset);
+  });
+}
+
+function ensureFishPresetImage(preset) {
+  if (fishAssetCache.has(preset.id)) {
+    return fishAssetCache.get(preset.id);
+  }
+
+  const source = getFishPresetAssetSource(preset);
+  if (!source) {
+    const record = {
+      image: null,
+      loaded: false,
+      error: true,
+      thumbSource: "",
+      cropBounds: null,
+      artworkCanvas: null,
+      artworkBounds: null
+    };
+    fishAssetCache.set(preset.id, record);
+    return record;
+  }
+
+  const image = new Image();
+  const record = {
+    image,
+    loaded: false,
+    error: false,
+    thumbSource: source,
+    cropBounds: null,
+    artworkCanvas: null,
+    artworkBounds: null
+  };
+  image.decoding = "async";
+  image.addEventListener("load", () => {
+    record.loaded = true;
+    const renderData = createFishPresetRenderData(image, source);
+    if (renderData) {
+      record.thumbSource = renderData.thumbnailSource;
+      record.cropBounds = renderData.cropBounds;
+      record.artworkCanvas = renderData.artworkCanvas;
+      record.artworkBounds = renderData.artworkBounds;
+      if (fishPresetRow) {
+        renderFishPresetButtons();
+      }
+    }
+    if (fishDesignerCanvas) {
+      drawFishDesignerCanvas();
+    }
+  });
+  image.addEventListener("error", () => {
+    record.error = true;
+  });
+  image.src = source;
+  fishAssetCache.set(preset.id, record);
+  return record;
+}
+
+function getFishPresetImageRecord(preset) {
+  return ensureFishPresetImage(preset);
+}
+
+function createFishPresetRenderData(image, source) {
+  const sourceSize = getFishAssetRenderSize(
+    source,
+    Math.max(image?.naturalWidth || 0, 1),
+    Math.max(image?.naturalHeight || 0, 1)
+  );
+  const sourceWidth = sourceSize.width;
+  const sourceHeight = sourceSize.height;
+  const sourceCanvas = document.createElement("canvas");
+  sourceCanvas.width = sourceWidth;
+  sourceCanvas.height = sourceHeight;
+  const sourceContext = sourceCanvas.getContext("2d", { willReadFrequently: true });
+
+  if (!sourceContext) {
+    return null;
+  }
+
+  sourceContext.clearRect(0, 0, sourceWidth, sourceHeight);
+  sourceContext.drawImage(image, 0, 0, sourceWidth, sourceHeight);
+
+  const artworkBounds = getOpaqueCanvasBounds(sourceContext, sourceWidth, sourceHeight);
+  if (!artworkBounds) {
+    return null;
+  }
+
+  const bleed = Math.max(18, Math.round(Math.max(artworkBounds.width, artworkBounds.height) * 0.1));
+  const cropLeft = Math.max(artworkBounds.left - bleed, 0);
+  const cropTop = Math.max(artworkBounds.top - bleed, 0);
+  const cropRight = Math.min(artworkBounds.right + bleed, sourceWidth - 1);
+  const cropBottom = Math.min(artworkBounds.bottom + bleed, sourceHeight - 1);
+  const cropWidth = Math.max((cropRight - cropLeft) + 1, 1);
+  const cropHeight = Math.max((cropBottom - cropTop) + 1, 1);
+  const artworkPadding = Math.max(12, Math.round(Math.max(cropWidth, cropHeight) * 0.04));
+  const artworkCanvas = document.createElement("canvas");
+  artworkCanvas.width = cropWidth + (artworkPadding * 2);
+  artworkCanvas.height = cropHeight + (artworkPadding * 2);
+  const artworkContext = artworkCanvas.getContext("2d");
+
+  if (!artworkContext) {
+    return null;
+  }
+
+  artworkContext.clearRect(0, 0, artworkCanvas.width, artworkCanvas.height);
+  artworkContext.drawImage(
+    sourceCanvas,
+    cropLeft,
+    cropTop,
+    cropWidth,
+    cropHeight,
+    artworkPadding,
+    artworkPadding,
+    cropWidth,
+    cropHeight
+  );
+
+  const targetCanvas = document.createElement("canvas");
+  targetCanvas.width = fishPresetThumbnailSize.width;
+  targetCanvas.height = fishPresetThumbnailSize.height;
+  const targetContext = targetCanvas.getContext("2d");
+
+  if (!targetContext) {
+    return null;
+  }
+
+  const maxDrawWidth = targetCanvas.width * 0.9;
+  const maxDrawHeight = targetCanvas.height * 0.82;
+  const scale = Math.min(maxDrawWidth / artworkCanvas.width, maxDrawHeight / artworkCanvas.height);
+  const drawWidth = artworkCanvas.width * scale;
+  const drawHeight = artworkCanvas.height * scale;
+  const drawX = (targetCanvas.width - drawWidth) / 2;
+  const drawY = (targetCanvas.height - drawHeight) / 2;
+
+  targetContext.clearRect(0, 0, targetCanvas.width, targetCanvas.height);
+  targetContext.drawImage(
+    artworkCanvas,
+    0,
+    0,
+    artworkCanvas.width,
+    artworkCanvas.height,
+    drawX,
+    drawY,
+    drawWidth,
+    drawHeight
+  );
+
+  return {
+    artworkCanvas,
+    artworkBounds: {
+      width: artworkCanvas.width,
+      height: artworkCanvas.height
+    },
+    thumbnailSource: targetCanvas.toDataURL("image/png"),
+    cropBounds: {
+      left: cropLeft - artworkPadding,
+      top: cropTop - artworkPadding,
+      width: artworkCanvas.width,
+      height: artworkCanvas.height,
+      visualCenterX: (artworkBounds.centerX - cropLeft) + artworkPadding,
+      visualCenterY: (artworkBounds.centerY - cropTop) + artworkPadding
+    }
+  };
+}
+
+function getFishAssetRenderSize(source, fallbackWidth, fallbackHeight) {
+  const safeFallbackWidth = Math.max(fallbackWidth || 0, 1);
+  const safeFallbackHeight = Math.max(fallbackHeight || 0, 1);
+  const svgMarkup = decodeSvgDataUri(source);
+
+  if (!svgMarkup) {
+    return {
+      width: safeFallbackWidth,
+      height: safeFallbackHeight
+    };
+  }
+
+  const viewBoxMatch = svgMarkup.match(/viewBox\s*=\s*["']([^"']+)["']/i);
+  if (!viewBoxMatch) {
+    return {
+      width: safeFallbackWidth,
+      height: safeFallbackHeight
+    };
+  }
+
+  const parts = viewBoxMatch[1]
+    .trim()
+    .split(/[\s,]+/)
+    .map(Number);
+
+  if (parts.length < 4 || parts.slice(0, 4).some(value => !Number.isFinite(value))) {
+    return {
+      width: safeFallbackWidth,
+      height: safeFallbackHeight
+    };
+  }
+
+  const viewBoxWidth = Math.max(parts[2], 1);
+  const viewBoxHeight = Math.max(parts[3], 1);
+  const longEdgeTarget = 1200;
+  const scale = longEdgeTarget / Math.max(viewBoxWidth, viewBoxHeight);
+
+  return {
+    width: Math.max(Math.round(viewBoxWidth * scale), 1),
+    height: Math.max(Math.round(viewBoxHeight * scale), 1)
+  };
+}
+
+function decodeSvgDataUri(source) {
+  if (typeof source !== "string" || !source.startsWith("data:image/svg+xml")) {
+    return "";
+  }
+
+  const base64Prefix = "data:image/svg+xml;base64,";
+  if (source.startsWith(base64Prefix)) {
+    try {
+      return atob(source.slice(base64Prefix.length));
+    } catch (_error) {
+      return "";
+    }
+  }
+
+  const commaIndex = source.indexOf(",");
+  if (commaIndex === -1) {
+    return "";
+  }
+
+  try {
+    return decodeURIComponent(source.slice(commaIndex + 1));
+  } catch (_error) {
+    return "";
+  }
+}
+
+function getOpaqueCanvasBounds(context, width, height) {
+  const imageData = context.getImageData(0, 0, width, height);
+  const { data } = imageData;
+  let left = width;
+  let right = -1;
+  let top = height;
+  let bottom = -1;
+  let alphaWeight = 0;
+  let weightedX = 0;
+  let weightedY = 0;
+
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const alpha = data[((y * width) + x) * 4 + 3];
+      if (alpha === 0) {
+        continue;
+      }
+
+      if (x < left) left = x;
+      if (x > right) right = x;
+      if (y < top) top = y;
+      if (y > bottom) bottom = y;
+
+      const weight = alpha / 255;
+      alphaWeight += weight;
+      weightedX += x * weight;
+      weightedY += y * weight;
+    }
+  }
+
+  if (right < left || bottom < top) {
+    return null;
+  }
+
+  return {
+    left,
+    right,
+    top,
+    bottom,
+    centerX: alphaWeight ? (weightedX / alphaWeight) : (left + right) / 2,
+    centerY: alphaWeight ? (weightedY / alphaWeight) : (top + bottom) / 2,
+    width: (right - left) + 1,
+    height: (bottom - top) + 1
+  };
+}
+
+function getFishArtworkBox(imageRecord) {
+  const maxWidth = 316;
+  const maxHeight = 156;
+  const sourceWidth = Math.max(imageRecord?.artworkBounds?.width || imageRecord?.cropBounds?.width || imageRecord?.image?.naturalWidth || 300, 1);
+  const sourceHeight = Math.max(imageRecord?.artworkBounds?.height || imageRecord?.cropBounds?.height || imageRecord?.image?.naturalHeight || 170, 1);
+  const scale = Math.min(maxWidth / sourceWidth, maxHeight / sourceHeight);
+  const width = sourceWidth * scale;
+  const height = sourceHeight * scale;
+
+  return {
+    x: (fishCanvasSize.width - width) / 2,
+    y: 42 + ((maxHeight - height) / 2),
+    width,
+    height
+  };
+}
+
+function drawFishArtworkPlaceholder(ctx, preset, fishName) {
+  const box = getFishArtworkBox(null);
+  const glow = ctx.createLinearGradient(box.x, box.y, box.x + box.width, box.y + box.height);
+  glow.addColorStop(0, `${preset.accent}cc`);
+  glow.addColorStop(1, "rgba(255, 255, 255, 0.35)");
+
+  ctx.save();
+  ctx.fillStyle = "rgba(7, 34, 55, 0.22)";
+  ctx.beginPath();
+  ctx.ellipse(box.x + (box.width / 2), box.y + box.height + 12, box.width * 0.24, 12, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = glow;
+  drawRoundedRectPath(ctx, box.x + 34, box.y + 30, box.width - 68, box.height - 60, 999);
+  ctx.fill();
+  ctx.restore();
+
+  drawFishNameRibbon(ctx, fishName, preset);
+}
+
 function drawFishArtwork(ctx, preset, strokes, fishName, options = {}) {
+  const imageRecord = getFishPresetImageRecord(preset);
+  if (!imageRecord?.image || !imageRecord.loaded) {
+    drawFishArtworkPlaceholder(ctx, preset, fishName);
+    return;
+  }
+
+  const box = getFishArtworkBox(imageRecord);
+  const showGhostLayer = options.showGhostLayer !== false;
+  const showNameRibbon = options.showNameRibbon !== false;
   if (options.showShadow) {
     ctx.save();
-    ctx.fillStyle = "rgba(5, 18, 30, 0.24)";
+    ctx.fillStyle = "rgba(5, 18, 30, 0.18)";
     ctx.beginPath();
-    ctx.ellipse(190, 168, 106, 24, 0, 0, Math.PI * 2);
+    ctx.ellipse(
+      box.x + (box.width / 2),
+      box.y + box.height + 10,
+      Math.max(36, box.width * 0.22),
+      Math.max(10, box.height * 0.08),
+      0,
+      0,
+      Math.PI * 2
+    );
     ctx.fill();
     ctx.restore();
   }
 
-  drawFishBase(ctx, preset);
+  drawFishPresetImage(ctx, imageRecord, box);
 
-  ctx.save();
-  traceFishSilhouette(ctx, preset);
-  ctx.clip();
-  drawFishPattern(ctx, preset);
-  drawFishStrokes(ctx, strokes);
-  ctx.restore();
+  if (strokes.length) {
+    const overlayCanvas = document.createElement("canvas");
+    overlayCanvas.width = fishCanvasSize.width;
+    overlayCanvas.height = fishCanvasSize.height;
+    const overlayContext = overlayCanvas.getContext("2d");
 
-  drawFishOutline(ctx, preset);
-  drawFishDetails(ctx, preset);
-  drawFishNameRibbon(ctx, fishName, preset);
+    if (overlayContext) {
+      drawFishStrokes(overlayContext, strokes, { opacity: 0.82 });
+      overlayContext.globalCompositeOperation = "destination-in";
+      drawFishPresetImage(overlayContext, imageRecord, box);
+
+      ctx.save();
+      ctx.globalAlpha = 0.94;
+      ctx.drawImage(overlayCanvas, 0, 0);
+      ctx.restore();
+    }
+  }
+
+  if (showGhostLayer) {
+    ctx.save();
+    ctx.globalAlpha = 0.16;
+    drawFishPresetImage(ctx, imageRecord, box);
+    ctx.restore();
+  }
+
+  if (showNameRibbon) {
+    drawFishNameRibbon(ctx, fishName, preset);
+  }
+}
+
+function drawFishPresetImage(ctx, imageRecord, box) {
+  const artworkCanvas = imageRecord?.artworkCanvas;
+  if (artworkCanvas) {
+    ctx.drawImage(artworkCanvas, box.x, box.y, box.width, box.height);
+    return;
+  }
+
+  const cropBounds = imageRecord?.cropBounds;
+  if (!imageRecord?.image) {
+    return;
+  }
+
+  if (!cropBounds) {
+    ctx.drawImage(imageRecord.image, box.x, box.y, box.width, box.height);
+    return;
+  }
+
+  const scale = box.width / Math.max(cropBounds.width, 1);
+  const visualCenterX = Number.isFinite(cropBounds.visualCenterX)
+    ? cropBounds.visualCenterX
+    : cropBounds.width / 2;
+  const visualCenterY = Number.isFinite(cropBounds.visualCenterY)
+    ? cropBounds.visualCenterY
+    : cropBounds.height / 2;
+  const centeredDrawX = clamp(
+    box.x + (box.width / 2) - (visualCenterX * scale),
+    12,
+    fishCanvasSize.width - box.width - 12
+  );
+  const centeredDrawY = clamp(
+    box.y + (box.height / 2) - (visualCenterY * scale),
+    18,
+    fishCanvasSize.height - box.height - 10
+  );
+
+  ctx.drawImage(
+    imageRecord.image,
+    cropBounds.left,
+    cropBounds.top,
+    cropBounds.width,
+    cropBounds.height,
+    centeredDrawX,
+    centeredDrawY,
+    box.width,
+    box.height
+  );
 }
 
 function drawFishBase(ctx, preset) {
@@ -3022,11 +3498,14 @@ function drawFanPattern(ctx, preset) {
   });
 }
 
-function drawFishStrokes(ctx, strokes) {
+function drawFishStrokes(ctx, strokes, options = {}) {
+  const opacity = clamp(Number(options.opacity) || 1, 0.1, 1);
   strokes.forEach(stroke => {
     if (!stroke.points?.length) return;
 
-    ctx.strokeStyle = stroke.color;
+    ctx.strokeStyle = stroke.color.startsWith("#")
+      ? hexToRgba(stroke.color, opacity)
+      : stroke.color;
     ctx.lineWidth = stroke.size;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
@@ -3089,7 +3568,7 @@ function drawFishNameRibbon(ctx, fishName, preset) {
   ctx.save();
   ctx.font = '700 12px "Inter", "Segoe UI", sans-serif';
   const width = clamp(ctx.measureText(label).width + 24, 70, 156);
-  const x = 188 - (width / 2);
+  const x = (fishCanvasSize.width - width) / 2;
   const y = 24;
 
   drawRoundedRectPath(ctx, x, y, width, 26, 10);
@@ -3197,24 +3676,33 @@ function drawRoundedRectPath(ctx, x, y, width, height, radius) {
   ctx.closePath();
 }
 
+function getCurrentFishName() {
+  return (fishNameInput?.value || "").trim().slice(0, 24) || getActiveFishPreset().starterName;
+}
+
 function saveFishToOcean() {
   if (!customFishLayer) return;
+
+  const activePreset = getActiveFishPreset();
+  const activeImage = getFishPresetImageRecord(activePreset);
+  if (!activeImage?.loaded) {
+    return;
+  }
 
   const fishName = getCurrentFishName();
   const artwork = exportCurrentFishArtwork(fishName);
   if (!artwork) {
-    updateFishStudioMessage("I couldn't export the fish artwork just now. Try once more.", "warning");
     return;
   }
 
-  fishStudioState.savedFish = [...fishStudioState.savedFish.slice(-7), createOceanFishRecord(fishName, artwork)];
+  fishStudioState.savedFish = pruneOceanFishRecords([
+    ...fishStudioState.savedFish,
+    createOceanFishRecord(fishName, artwork, activePreset)
+  ]);
   persistOceanFish();
   renderCustomFishSchool();
-  updateFishStudioMessage(`${fishName} joined the ocean background.`, "success");
-}
-
-function getCurrentFishName() {
-  return (fishNameInput?.value || "").trim().slice(0, 24) || getActiveFishPreset().starterName;
+  fishStudioState.strokes = [];
+  drawFishDesignerCanvas();
 }
 
 function exportCurrentFishArtwork(fishName) {
@@ -3225,26 +3713,79 @@ function exportCurrentFishArtwork(fishName) {
   if (!ctx) return "";
 
   drawFishArtwork(ctx, getActiveFishPreset(), fishStudioState.strokes, fishName, {
-    showShadow: false
+    showShadow: false,
+    showGhostLayer: false,
+    showNameRibbon: false
   });
-  return exportCanvas.toDataURL("image/png");
+
+  const artworkBounds = getOpaqueCanvasBounds(ctx, fishCanvasSize.width, fishCanvasSize.height);
+  if (!artworkBounds) {
+    return "";
+  }
+
+  const bleed = 24;
+  const cropLeft = Math.max(artworkBounds.left - bleed, 0);
+  const cropTop = Math.max(artworkBounds.top - bleed, 0);
+  const cropRight = Math.min(artworkBounds.right + bleed, fishCanvasSize.width - 1);
+  const cropBottom = Math.min(artworkBounds.bottom + bleed, fishCanvasSize.height - 1);
+  const cropWidth = Math.max((cropRight - cropLeft) + 1, 1);
+  const cropHeight = Math.max((cropBottom - cropTop) + 1, 1);
+  const exportPadding = 12;
+  const croppedCanvas = document.createElement("canvas");
+  croppedCanvas.width = cropWidth + (exportPadding * 2);
+  croppedCanvas.height = cropHeight + (exportPadding * 2);
+  const croppedContext = croppedCanvas.getContext("2d");
+
+  if (!croppedContext) {
+    return exportCanvas.toDataURL("image/png");
+  }
+
+  croppedContext.clearRect(0, 0, croppedCanvas.width, croppedCanvas.height);
+  croppedContext.drawImage(
+    exportCanvas,
+    cropLeft,
+    cropTop,
+    cropWidth,
+    cropHeight,
+    exportPadding,
+    exportPadding,
+    cropWidth,
+    cropHeight
+  );
+
+  return croppedCanvas.toDataURL("image/png");
 }
 
-function createOceanFishRecord(name, image) {
+function createOceanFishRecord(name, image, preset) {
   const depthScale = Math.random() * 0.34 + 0.82;
+  const drift = Math.round(10 + (Math.random() * 16));
+  const createdAt = Date.now();
   return {
     id: `fish-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     name,
     image,
+    presetId: preset?.id || "",
+    monthKey: getCurrentOceanMonthKey(new Date(createdAt)),
+    createdAt,
     top: Math.round(16 + (Math.random() * 50)),
     size: Math.round((112 + (Math.random() * 58)) * depthScale),
-    duration: Number((18 + (Math.random() * 12)).toFixed(2)),
-    delay: Number((Math.random() * -18).toFixed(2)),
-    bobDuration: Number((4.2 + (Math.random() * 3.4)).toFixed(2)),
+    duration: Number((24 + (Math.random() * 16)).toFixed(2)),
+    delay: Number((Math.random() * -24).toFixed(2)),
+    bobDuration: Number((5.6 + (Math.random() * 4.4)).toFixed(2)),
+    swayDuration: Number((6.4 + (Math.random() * 4.2)).toFixed(2)),
+    rollDuration: Number((4.8 + (Math.random() * 3.2)).toFixed(2)),
+    finDuration: Number((2.2 + (Math.random() * 1.8)).toFixed(2)),
+    drift,
+    travelLiftOne: Math.round(drift * -0.4),
+    travelDropOne: Math.round(drift * 0.3),
+    travelLiftTwo: Math.round(drift * -0.18),
+    travelDropTwo: Math.round(drift * 0.1),
+    floatLift: Math.round(drift * -0.38),
+    floatDrop: Math.round(drift * 0.22),
+    tilt: Number((1.6 + (Math.random() * 3.2)).toFixed(2)),
     restLeft: Number((12 + (Math.random() * 64)).toFixed(2)),
-    opacity: Number((0.62 + (Math.random() * 0.26)).toFixed(2)),
     depthScale: Number(depthScale.toFixed(2)),
-    direction: Math.random() > 0.5 ? "reverse" : "forward"
+    direction: "forward"
   };
 }
 
@@ -3253,21 +3794,34 @@ function renderCustomFishSchool() {
 
   customFishLayer.innerHTML = fishStudioState.savedFish.map(fish => `
     <div
-      class="user-fish${fish.direction === "reverse" ? " is-reverse" : ""}"
+      class="user-fish"
       style="
         --fish-top:${fish.top}%;
         --fish-size:${fish.size}px;
         --fish-duration:${fish.duration}s;
         --fish-delay:${fish.delay}s;
         --fish-bob-duration:${fish.bobDuration}s;
+        --fish-sway-duration:${fish.swayDuration}s;
+        --fish-roll-duration:${fish.rollDuration}s;
+        --fish-fin-duration:${fish.finDuration}s;
+        --fish-travel-lift-1:${fish.travelLiftOne}px;
+        --fish-travel-drop-1:${fish.travelDropOne}px;
+        --fish-travel-lift-2:${fish.travelLiftTwo}px;
+        --fish-travel-drop-2:${fish.travelDropTwo}px;
+        --fish-float-up:${fish.floatLift}px;
+        --fish-float-down:${fish.floatDrop}px;
+        --fish-tilt:${fish.tilt}deg;
         --fish-rest-left:${fish.restLeft}%;
-        --fish-opacity:${fish.opacity};
         --fish-depth-scale:${fish.depthScale};
       "
     >
-      <div class="user-fish-swimmer">
-        <img class="user-fish-art" src="${escapeAttribute(fish.image)}" alt="${escapeAttribute(`${fish.name} swimming in the ocean`)}">
-        <span class="user-fish-caption">${escapeHtml(fish.name)}</span>
+      <div class="user-fish-path">
+        <div class="user-fish-swimmer">
+          <div class="user-fish-figure">
+            <img class="user-fish-art" src="${escapeAttribute(fish.image)}" alt="${escapeAttribute(`${fish.name} swimming in the ocean`)}">
+          </div>
+          <span class="user-fish-caption">${escapeHtml(fish.name)}</span>
+        </div>
       </div>
     </div>
   `).join("");
@@ -3280,10 +3834,11 @@ function loadSavedOceanFish() {
       return [];
     }
 
-    return raw
-      .map(sanitizeOceanFishRecord)
-      .filter(Boolean)
-      .slice(-8);
+    return pruneOceanFishRecords(
+      raw
+        .map(sanitizeOceanFishRecord)
+        .filter(Boolean)
+    );
   } catch (_error) {
     return [];
   }
@@ -3294,34 +3849,75 @@ function sanitizeOceanFishRecord(fish) {
     return null;
   }
 
+  const monthKey = typeof fish.monthKey === "string" ? fish.monthKey : "";
+  if (!/^\d{4}-\d{2}$/.test(monthKey)) {
+    return null;
+  }
+
+  const createdAt = Number(fish.createdAt);
+
   return {
     id: String(fish.id || `fish-${Date.now()}`),
     name: String(fish.name || "Ocean Fish").slice(0, 24),
     image: fish.image,
+    presetId: String(fish.presetId || ""),
+    monthKey,
+    createdAt: Number.isFinite(createdAt) ? createdAt : 0,
     top: clamp(Number(fish.top) || 24, 12, 68),
     size: clamp(Number(fish.size) || 132, 88, 220),
-    duration: clamp(Number(fish.duration) || 22, 10, 48),
+    duration: clamp(Number(fish.duration) || 28, 16, 56),
     delay: clamp(Number(fish.delay) || 0, -24, 0),
-    bobDuration: clamp(Number(fish.bobDuration) || 5.2, 2.4, 10),
+    bobDuration: clamp(Number(fish.bobDuration) || 7.2, 3.2, 12),
+    swayDuration: clamp(Number(fish.swayDuration) || 7.6, 4, 14),
+    rollDuration: clamp(Number(fish.rollDuration) || 6.1, 3, 10),
+    finDuration: clamp(Number(fish.finDuration) || 3.1, 1.8, 5),
+    drift: clamp(Number(fish.drift) || 16, 6, 28),
+    travelLiftOne: clamp(Number(fish.travelLiftOne) || -6, -18, -2),
+    travelDropOne: clamp(Number(fish.travelDropOne) || 5, 2, 12),
+    travelLiftTwo: clamp(Number(fish.travelLiftTwo) || -3, -10, -1),
+    travelDropTwo: clamp(Number(fish.travelDropTwo) || 2, 1, 6),
+    floatLift: clamp(Number(fish.floatLift) || -6, -16, -2),
+    floatDrop: clamp(Number(fish.floatDrop) || 4, 1, 10),
+    tilt: clamp(Number(fish.tilt) || 2.6, 1, 6),
     restLeft: clamp(Number(fish.restLeft) || 38, 8, 82),
-    opacity: clamp(Number(fish.opacity) || 0.74, 0.35, 1),
     depthScale: clamp(Number(fish.depthScale) || 1, 0.7, 1.25),
-    direction: fish.direction === "reverse" ? "reverse" : "forward"
+    direction: "forward"
   };
 }
 
 function persistOceanFish() {
   try {
-    window.localStorage.setItem(fishStorageKey, JSON.stringify(fishStudioState.savedFish.slice(-8)));
+    fishStudioState.savedFish = pruneOceanFishRecords(fishStudioState.savedFish);
+    window.localStorage.setItem(fishStorageKey, JSON.stringify(fishStudioState.savedFish));
   } catch (_error) {
-    updateFishStudioMessage("The fish is in the ocean for now, but storage was unavailable.", "warning");
+    // Ignore storage failures and keep the current session fish visible.
   }
 }
 
-function updateFishStudioMessage(message, tone = "neutral") {
-  if (!fishStudioNote) return;
-  fishStudioNote.textContent = message;
-  fishStudioNote.dataset.tone = tone;
+function getCurrentOceanMonthKey(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  return `${year}-${month}`;
+}
+
+function pruneOceanFishRecords(records) {
+  const currentMonthKey = getCurrentOceanMonthKey();
+  return records
+    .filter(fish => fish && fish.monthKey === currentMonthKey)
+    .sort((leftFish, rightFish) => leftFish.createdAt - rightFish.createdAt)
+    .slice(-fishMonthlyLimit);
+}
+
+function cleanupLegacyOceanFishStorage() {
+  try {
+    legacyFishStorageKeys.forEach(storageKey => {
+      if (storageKey !== fishStorageKey) {
+        window.localStorage.removeItem(storageKey);
+      }
+    });
+  } catch (_error) {
+    // Ignore cleanup failures and let the new storage take over.
+  }
 }
 
 function hexToRgba(hex, alpha) {
@@ -3840,6 +4436,7 @@ function createWindow(appKey, options = {}) {
   windowEl.focus();
   bindWindowControls(windowEl, registryKey);
   bindLaunchers(windowEl);
+  bindContactForms(windowEl);
   bindProjectCards(windowEl);
   syncTaskbarState();
 }
@@ -3866,6 +4463,30 @@ function bindLaunchers(scope = document) {
     if (button.dataset.bound === "true") return;
     button.dataset.bound = "true";
     button.addEventListener("click", () => openProjectWindow(button.dataset.projectLaunch));
+  });
+}
+
+function bindContactForms(scope = document) {
+  scope.querySelectorAll(".contact-form").forEach(form => {
+    if (form.dataset.bound === "true") return;
+    form.dataset.bound = "true";
+    form.addEventListener("submit", handleContactFormSubmit);
+  });
+}
+
+function handleContactFormSubmit(event) {
+  event.preventDefault();
+
+  const form = event.currentTarget;
+  if (!(form instanceof HTMLFormElement)) {
+    return;
+  }
+
+  const formData = new FormData(form);
+  openMailDraft({
+    name: String(formData.get("name") || ""),
+    email: String(formData.get("email") || ""),
+    projectNote: String(formData.get("projectNote") || "")
   });
 }
 
@@ -4098,6 +4719,42 @@ function escapeAttribute(value) {
   return escapeHtml(value);
 }
 
+function buildMailtoHref({ subject = defaultEmailSubject, body = "" } = {}) {
+  const queryParts = [];
+
+  if (subject) {
+    queryParts.push(`subject=${encodeURIComponent(subject)}`);
+  }
+
+  if (body) {
+    queryParts.push(`body=${encodeURIComponent(body)}`);
+  }
+
+  return `mailto:${profile.email}${queryParts.length ? `?${queryParts.join("&")}` : ""}`;
+}
+
+function openMailDraft({ name = "", email = "", projectNote = "" } = {}) {
+  const senderName = name.trim();
+  const senderEmail = email.trim();
+  const note = projectNote.trim();
+  const subject = senderName ? `Portfolio inquiry from ${senderName}` : defaultEmailSubject;
+  const contactDetails = [];
+
+  if (senderName) {
+    contactDetails.push(`Name: ${senderName}`);
+  }
+
+  if (senderEmail) {
+    contactDetails.push(`Email: ${senderEmail}`);
+  }
+
+  const body = [contactDetails.join("\n"), note || defaultEmailMessage]
+    .filter(Boolean)
+    .join("\n\n");
+
+  window.location.href = buildMailtoHref({ subject, body });
+}
+
 const customCursorInteractiveSelector = [
   "a",
   "button",
@@ -4115,12 +4772,332 @@ const customCursorInteractiveSelector = [
   ".toolbar-link",
   "input[type='range']",
   ".fish-preset-button",
-  ".fish-color-button",
+  ".ocean-audio-toggle",
   ".adaptive-launcher",
   ".adaptive-dock-icon",
   ".tablet-action",
   ".mobile-chip"
 ].join(", ");
+
+// Keep the click sound local so the portfolio doesn't rely on an external audio file.
+let uiAudioContext = null;
+let activeSoundPointerId = null;
+const uiNoiseBufferCache = new Map();
+const oceanNoiseBufferCache = new Map();
+
+function getUiAudioContext() {
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) {
+    return null;
+  }
+
+  if (!uiAudioContext) {
+    uiAudioContext = new AudioContextClass();
+  }
+
+  if (uiAudioContext.state === "suspended") {
+    uiAudioContext.resume().catch(() => {});
+  }
+
+  return uiAudioContext;
+}
+
+function getUiNoiseBuffer(audioContext) {
+  const cacheKey = `${audioContext.sampleRate}:2048`;
+  if (uiNoiseBufferCache.has(cacheKey)) {
+    return uiNoiseBufferCache.get(cacheKey);
+  }
+
+  const buffer = audioContext.createBuffer(1, 2048, audioContext.sampleRate);
+  const channel = buffer.getChannelData(0);
+  for (let index = 0; index < channel.length; index += 1) {
+    channel[index] = (Math.random() * 2) - 1;
+  }
+
+  uiNoiseBufferCache.set(cacheKey, buffer);
+  return buffer;
+}
+
+function getOceanNoiseBuffer(audioContext) {
+  const cacheKey = `${audioContext.sampleRate}:8`;
+  if (oceanNoiseBufferCache.has(cacheKey)) {
+    return oceanNoiseBufferCache.get(cacheKey);
+  }
+
+  const frameCount = audioContext.sampleRate * 8;
+  const buffer = audioContext.createBuffer(2, frameCount, audioContext.sampleRate);
+  for (let channelIndex = 0; channelIndex < buffer.numberOfChannels; channelIndex += 1) {
+    const channel = buffer.getChannelData(channelIndex);
+    let brown = 0;
+    for (let index = 0; index < channel.length; index += 1) {
+      const white = (Math.random() * 2) - 1;
+      brown = (brown + (0.04 * white)) / 1.04;
+      channel[index] = clamp(((brown * 3.3) + (white * 0.14)) * 0.22, -1, 1);
+    }
+  }
+
+  oceanNoiseBufferCache.set(cacheKey, buffer);
+  return buffer;
+}
+
+function createStereoNode(audioContext, pan = 0) {
+  if (typeof audioContext.createStereoPanner === "function") {
+    const stereoPanner = audioContext.createStereoPanner();
+    stereoPanner.pan.value = pan;
+    return stereoPanner;
+  }
+
+  return audioContext.createGain();
+}
+
+function ensureOceanAmbienceGraph(audioContext) {
+  if (oceanAmbienceState.masterGain) {
+    return;
+  }
+
+  const masterGain = audioContext.createGain();
+  const ambienceCompressor = audioContext.createDynamicsCompressor();
+  ambienceCompressor.threshold.value = -26;
+  ambienceCompressor.knee.value = 18;
+  ambienceCompressor.ratio.value = 2.4;
+  ambienceCompressor.attack.value = 0.03;
+  ambienceCompressor.release.value = 0.28;
+  masterGain.gain.value = 0.0001;
+  masterGain.connect(ambienceCompressor);
+  ambienceCompressor.connect(audioContext.destination);
+
+  const createOceanLayer = ({
+    baseGain,
+    lfoDepth,
+    lfoRate,
+    highpassFrequency,
+    lowpassFrequency,
+    pan,
+    offset = 0
+  }) => {
+    const source = audioContext.createBufferSource();
+    source.buffer = getOceanNoiseBuffer(audioContext);
+    source.loop = true;
+
+    const highpassFilter = audioContext.createBiquadFilter();
+    highpassFilter.type = "highpass";
+    highpassFilter.frequency.value = highpassFrequency;
+
+    const lowpassFilter = audioContext.createBiquadFilter();
+    lowpassFilter.type = "lowpass";
+    lowpassFilter.frequency.value = lowpassFrequency;
+    lowpassFilter.Q.value = 0.4;
+
+    const layerGain = audioContext.createGain();
+    layerGain.gain.value = baseGain;
+
+    const stereoNode = createStereoNode(audioContext, pan);
+    const lfo = audioContext.createOscillator();
+    lfo.type = "sine";
+    lfo.frequency.value = lfoRate;
+
+    const lfoGain = audioContext.createGain();
+    lfoGain.gain.value = lfoDepth;
+
+    source.connect(highpassFilter);
+    highpassFilter.connect(lowpassFilter);
+    lowpassFilter.connect(layerGain);
+    layerGain.connect(stereoNode);
+    stereoNode.connect(masterGain);
+    lfo.connect(lfoGain);
+    lfoGain.connect(layerGain.gain);
+
+    source.start(audioContext.currentTime, offset);
+    lfo.start(audioContext.currentTime);
+
+    return {
+      source,
+      lfo
+    };
+  };
+
+  const surfLayer = createOceanLayer({
+    baseGain: 0.24,
+    lfoDepth: 0.054,
+    lfoRate: 0.05,
+    highpassFrequency: 64,
+    lowpassFrequency: 1440,
+    pan: -0.14,
+    offset: 1.2
+  });
+
+  const foamLayer = createOceanLayer({
+    baseGain: 0.1,
+    lfoDepth: 0.026,
+    lfoRate: 0.11,
+    highpassFrequency: 620,
+    lowpassFrequency: 4200,
+    pan: 0.18,
+    offset: 4.1
+  });
+
+  const deepLayer = createOceanLayer({
+    baseGain: 0.14,
+    lfoDepth: 0.032,
+    lfoRate: 0.032,
+    highpassFrequency: 24,
+    lowpassFrequency: 340,
+    pan: 0.04,
+    offset: 0.6
+  });
+
+  oceanAmbienceState.masterGain = masterGain;
+  oceanAmbienceState.hasStarted = true;
+  oceanAmbienceState.layers = [surfLayer, foamLayer, deepLayer];
+}
+
+function getOceanAmbienceTargetGain() {
+  return oceanAmbienceState.enabled && !document.hidden
+    ? oceanAmbienceMaxGain
+    : 0.0001;
+}
+
+function setOceanAmbienceLevel(targetGain, { immediate = false } = {}) {
+  if (!oceanAmbienceState.masterGain) {
+    return;
+  }
+
+  const audioContext = oceanAmbienceState.masterGain.context;
+  const now = audioContext.currentTime;
+  const gain = oceanAmbienceState.masterGain.gain;
+  const nextGain = Math.max(targetGain, 0.0001);
+  gain.cancelScheduledValues(now);
+
+  if (immediate) {
+    gain.setValueAtTime(nextGain, now);
+    return;
+  }
+
+  gain.setValueAtTime(Math.max(gain.value, 0.0001), now);
+  gain.exponentialRampToValueAtTime(nextGain, now + 1.6);
+}
+
+function persistOceanAmbiencePreference() {
+  try {
+    window.localStorage.removeItem(oceanAmbienceStorageKey);
+  } catch (_error) {
+    // Ignore preference persistence failures and keep the current session state.
+  }
+}
+
+function updateOceanAudioToggle() {
+  if (!oceanAudioToggle || !oceanAudioStatus) {
+    return;
+  }
+
+  const statusText = oceanAmbienceState.enabled
+    ? (oceanAmbienceState.hasStarted ? "Ocean sound on" : "On by default")
+    : "Muted";
+
+  oceanAudioToggle.dataset.state = oceanAmbienceState.enabled
+    ? (oceanAmbienceState.hasStarted ? "on" : "ready")
+    : "off";
+  oceanAudioToggle.setAttribute("aria-pressed", oceanAmbienceState.enabled ? "true" : "false");
+  oceanAudioToggle.setAttribute(
+    "aria-label",
+    oceanAmbienceState.enabled ? "Turn ocean ambience off" : "Turn ocean ambience on"
+  );
+  oceanAudioStatus.textContent = statusText;
+}
+
+function unlockOceanAmbience() {
+  if (!oceanAmbienceState.enabled) {
+    updateOceanAudioToggle();
+    return;
+  }
+
+  const audioContext = getUiAudioContext();
+  if (!audioContext) {
+    updateOceanAudioToggle();
+    return;
+  }
+
+  ensureOceanAmbienceGraph(audioContext);
+  setOceanAmbienceLevel(getOceanAmbienceTargetGain());
+  updateOceanAudioToggle();
+}
+
+function initializeOceanAmbience() {
+  if (!oceanAudioToggle) {
+    return;
+  }
+
+  oceanAmbienceState.enabled = true;
+  persistOceanAmbiencePreference();
+  updateOceanAudioToggle();
+
+  if (oceanAudioToggle.dataset.bound === "true") {
+    return;
+  }
+
+  oceanAudioToggle.dataset.bound = "true";
+  oceanAudioToggle.addEventListener("click", () => {
+    oceanAmbienceState.enabled = !oceanAmbienceState.enabled;
+
+    if (oceanAmbienceState.enabled) {
+      unlockOceanAmbience();
+      return;
+    }
+
+    setOceanAmbienceLevel(0.0001, { immediate: true });
+    updateOceanAudioToggle();
+  });
+}
+
+function playUiClickSound({ release = false } = {}) {
+  const audioContext = getUiAudioContext();
+  if (!audioContext) {
+    return;
+  }
+
+  const now = audioContext.currentTime + 0.002;
+  const toneEnvelope = audioContext.createGain();
+  toneEnvelope.gain.setValueAtTime(0.0001, now);
+  toneEnvelope.gain.exponentialRampToValueAtTime(release ? 0.02 : 0.05, now + 0.002);
+  toneEnvelope.gain.exponentialRampToValueAtTime(0.0001, now + (release ? 0.05 : 0.065));
+  toneEnvelope.connect(audioContext.destination);
+
+  const tone = audioContext.createOscillator();
+  tone.type = release ? "triangle" : "square";
+  tone.frequency.setValueAtTime(release ? 1320 : 960, now);
+  tone.frequency.exponentialRampToValueAtTime(release ? 760 : 420, now + (release ? 0.04 : 0.055));
+
+  const toneFilter = audioContext.createBiquadFilter();
+  toneFilter.type = "lowpass";
+  toneFilter.frequency.setValueAtTime(release ? 2600 : 2100, now);
+
+  tone.connect(toneFilter);
+  toneFilter.connect(toneEnvelope);
+  tone.start(now);
+  tone.stop(now + (release ? 0.05 : 0.07));
+
+  const noise = audioContext.createBufferSource();
+  noise.buffer = getUiNoiseBuffer(audioContext);
+
+  const noiseFilter = audioContext.createBiquadFilter();
+  noiseFilter.type = "bandpass";
+  noiseFilter.frequency.setValueAtTime(release ? 1800 : 1350, now);
+  noiseFilter.Q.setValueAtTime(1.2, now);
+
+  const noiseEnvelope = audioContext.createGain();
+  noiseEnvelope.gain.setValueAtTime(release ? 0.0025 : 0.006, now);
+  noiseEnvelope.gain.exponentialRampToValueAtTime(0.0001, now + (release ? 0.02 : 0.03));
+  noiseEnvelope.connect(audioContext.destination);
+
+  noise.connect(noiseFilter);
+  noiseFilter.connect(noiseEnvelope);
+  noise.start(now);
+  noise.stop(now + 0.035);
+}
+
+function isInteractiveSoundTarget(target) {
+  return target instanceof Element && Boolean(target.closest(customCursorInteractiveSelector));
+}
 
 function setCursorMode(mode = "default") {
   if (!cursorGlow) {
@@ -4128,6 +5105,66 @@ function setCursorMode(mode = "default") {
   }
 
   cursorGlow.dataset.mode = mode;
+}
+
+function renderCursorGlowFollow() {
+  if (!cursorGlow) {
+    return;
+  }
+
+  cursorState.frameId = 0;
+  const shellMode = body.dataset.shell || getShellMode();
+  const shouldSnap = prefersReducedMotion.matches || shellMode !== "desktop";
+  const deltaX = cursorState.targetX - cursorState.currentX;
+  const deltaY = cursorState.targetY - cursorState.currentY;
+
+  if (shouldSnap || !cursorState.initialized) {
+    cursorState.currentX = cursorState.targetX;
+    cursorState.currentY = cursorState.targetY;
+    cursorState.initialized = true;
+  } else {
+    const distance = Math.hypot(deltaX, deltaY);
+    const easing = distance > 180 ? 0.48 : 0.34;
+    cursorState.currentX += deltaX * easing;
+    cursorState.currentY += deltaY * easing;
+  }
+
+  cursorGlow.style.left = `${cursorState.currentX}px`;
+  cursorGlow.style.top = `${cursorState.currentY}px`;
+
+  if (!shouldSnap) {
+    const remainingX = cursorState.targetX - cursorState.currentX;
+    const remainingY = cursorState.targetY - cursorState.currentY;
+    if (Math.abs(remainingX) > 0.2 || Math.abs(remainingY) > 0.2) {
+      cursorState.frameId = window.requestAnimationFrame(renderCursorGlowFollow);
+    }
+  }
+}
+
+function updateCursorGlowPosition(clientX, clientY, { immediate = false } = {}) {
+  if (!cursorGlow) {
+    return;
+  }
+
+  cursorState.targetX = clientX;
+  cursorState.targetY = clientY;
+
+  if (immediate) {
+    cursorState.currentX = clientX;
+    cursorState.currentY = clientY;
+    cursorState.initialized = true;
+    cursorGlow.style.left = `${clientX}px`;
+    cursorGlow.style.top = `${clientY}px`;
+    if (cursorState.frameId) {
+      window.cancelAnimationFrame(cursorState.frameId);
+      cursorState.frameId = 0;
+    }
+    return;
+  }
+
+  if (!cursorState.frameId) {
+    renderCursorGlowFollow();
+  }
 }
 
 function getCursorMode(target) {
@@ -4158,12 +5195,23 @@ taskbarButtons.forEach(button => {
   button.addEventListener("click", () => createWindow(button.dataset.app));
 });
 
-document.addEventListener("mousemove", event => {
+document.addEventListener("pointermove", event => {
   if (!cursorGlow) return;
-  cursorGlow.style.left = `${event.clientX}px`;
-  cursorGlow.style.top = `${event.clientY}px`;
+  updateCursorGlowPosition(event.clientX, event.clientY);
   setCursorMode(getCursorMode(event.target));
-});
+}, { passive: true });
+
+document.addEventListener("pointerdown", () => {
+  unlockOceanAmbience();
+}, { capture: true, passive: true });
+
+document.addEventListener("keydown", event => {
+  if (event.metaKey || event.ctrlKey || event.altKey) {
+    return;
+  }
+
+  unlockOceanAmbience();
+}, true);
 
 document.addEventListener("mouseout", event => {
   if (!cursorGlow || event.relatedTarget) {
@@ -4173,11 +5221,41 @@ document.addEventListener("mouseout", event => {
   setCursorMode("hidden");
 });
 
+document.addEventListener("pointerdown", event => {
+  if (event.button !== 0 || !isInteractiveSoundTarget(event.target)) {
+    return;
+  }
+
+  activeSoundPointerId = event.pointerId;
+  unlockOceanAmbience();
+  playUiClickSound();
+}, true);
+
+document.addEventListener("pointerup", event => {
+  if (event.button !== 0 || activeSoundPointerId !== event.pointerId) {
+    return;
+  }
+
+  activeSoundPointerId = null;
+  playUiClickSound({ release: true });
+}, true);
+
+document.addEventListener("pointercancel", () => {
+  activeSoundPointerId = null;
+}, true);
+
 window.addEventListener("blur", () => {
+  activeSoundPointerId = null;
   setCursorMode("hidden");
 });
 
+document.addEventListener("visibilitychange", () => {
+  setOceanAmbienceLevel(getOceanAmbienceTargetGain());
+  updateOceanAudioToggle();
+});
+
 window.addEventListener("resize", () => {
+  updateCursorGlowPosition(window.innerWidth / 2, window.innerHeight / 2, { immediate: true });
   updateAdaptiveShell();
   applyShortcutPositions();
 
@@ -4204,8 +5282,10 @@ window.addEventListener("resize", () => {
 
 renderDesktopIcons();
 initializeFishStudio();
+initializeOceanAmbience();
 renderAdaptiveShells();
 bindLaunchers();
+bindContactForms();
 initializeEntryExperience();
 updateAdaptiveShell();
 updateClock();

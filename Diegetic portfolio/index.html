@@ -19,7 +19,7 @@
 
       <main class="desktop-canvas" id="desktop-canvas">
         <div class="ocean-backdrop" aria-hidden="true">
-          <img class="ocean-illustration" src="ocean-scene.svg" alt="">
+          <img class="ocean-illustration" src="ocean-home-background.svg" alt="">
 
           <div class="ocean-light light-a"></div>
           <div class="ocean-light light-b"></div>
@@ -40,6 +40,7 @@
             <span class="ambient-fish ambient-fish-d"></span>
             <span class="ambient-fish ambient-fish-e"></span>
           </div>
+          <div class="custom-fish-layer" id="custom-fish-layer"></div>
 
           <div class="ocean-plants">
             <span class="seaweed seaweed-a"></span>
@@ -51,8 +52,27 @@
             <span class="coral coral-b"></span>
           </div>
 
-          <div class="custom-fish-layer" id="custom-fish-layer"></div>
         </div>
+
+        <button
+          class="ocean-audio-toggle"
+          id="ocean-audio-toggle"
+          type="button"
+          aria-pressed="true"
+          aria-label="Turn ocean ambience off"
+        >
+          <span class="ocean-audio-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M4 15.5v-7h4.2L13 4.7v14.6l-4.8-3.8z"></path>
+              <path d="M16.2 9.3c1.1.9 1.8 2.3 1.8 3.7s-.7 2.8-1.8 3.7"></path>
+              <path d="M18.8 6.7c1.8 1.6 2.9 3.9 2.9 6.3s-1.1 4.7-2.9 6.3"></path>
+            </svg>
+          </span>
+          <span class="ocean-audio-copy">
+            <strong>Ocean ambience</strong>
+            <span id="ocean-audio-status">Tap to start</span>
+          </span>
+        </button>
 
         <aside class="widgets-stack">
           <section class="widget-card hero-widget">
@@ -77,13 +97,9 @@
                 <span class="ms-icon">&#xE8A7;</span>
                 <span>Behance</span>
               </a>
-              <a href="mailto:sagarwa130ct2004@gmail.com">
+              <a href="mailto:sagarwa130ct2004@gmail.com?subject=Portfolio%20Inquiry%20for%20Sweety%20Agarwal">
                 <span class="ms-icon">&#xE8A8;</span>
                 <span>Email</span>
-              </a>
-              <a href="file:///C:/Users/sweet/Downloads/Resume_SweetyAgarwal.pdf" target="_blank" rel="noreferrer">
-                <span class="ms-icon">&#xE8E5;</span>
-                <span>Resume PDF</span>
               </a>
             </div>
           </section>
@@ -93,9 +109,6 @@
               <div class="fish-studio-header">
                 <p class="widget-label">Ocean Studio</p>
                 <h2 id="fish-studio-title">Design your own fish</h2>
-                <p>
-                  Pick a fish preset, add a name, sketch on the canvas, and send it swimming into the home ocean.
-                </p>
               </div>
 
               <div class="fish-studio-controls">
@@ -105,15 +118,6 @@
                   <span>Fish name</span>
                   <input id="fish-name-input" type="text" maxlength="24" value="Moonbeam" placeholder="Name your fish">
                 </label>
-
-                <div class="fish-brush-row">
-                  <div class="fish-color-row" id="fish-color-row" role="list" aria-label="Brush colors"></div>
-
-                  <label class="fish-size-field" for="fish-brush-size">
-                    <span>Brush size</span>
-                    <input id="fish-brush-size" type="range" min="2" max="16" value="7">
-                  </label>
-                </div>
               </div>
 
               <div class="fish-canvas-shell">
@@ -124,16 +128,9 @@
                     <span class="ms-icon">&#xE8C8;</span>
                     <span>Add to Ocean</span>
                   </button>
-                  <button class="action-button secondary" id="clear-fish-button" type="button">
-                    <span class="ms-icon">&#xE74D;</span>
-                    <span>Clear Marks</span>
-                  </button>
                 </div>
+                <p class="fish-storage-note">The home reef refreshes every month and keeps only the newest 4 custom fish.</p>
               </div>
-
-              <p class="fish-studio-note" id="fish-studio-note">
-                Choose a preset, sketch on it, and watch it join the underwater background.
-              </p>
             </section>
           </div>
         </aside>
@@ -195,7 +192,7 @@
               My process moves from framing the problem clearly to crafting the final visual language with intention.
             </p>
             <div class="tablet-inline-links">
-              <a href="mailto:sagarwa130ct2004@gmail.com">Email</a>
+              <a href="mailto:sagarwa130ct2004@gmail.com?subject=Portfolio%20Inquiry%20for%20Sweety%20Agarwal">Email</a>
               <a href="https://www.behance.net/sweetyagarwal5" target="_blank" rel="noreferrer">Behance</a>
             </div>
           </section>
@@ -470,6 +467,7 @@
   <div class="resident-mascot" id="resident-mascot" aria-live="polite"></div>
   <div class="cursor-glow" id="cursor-glow" data-mode="hidden" aria-hidden="true"></div>
 
+  <script src="fish-preset-assets.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
