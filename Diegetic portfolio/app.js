@@ -9,6 +9,7 @@ const tabletDock = document.getElementById("tablet-dock");
 const mobileHub = document.getElementById("mobile-hub");
 const mobileAppGrid = document.getElementById("mobile-app-grid");
 const mobileDock = document.getElementById("mobile-dock");
+const adaptiveOceanBackdrop = document.getElementById("adaptive-ocean-backdrop");
 const studioScene = document.getElementById("studio-scene");
 const desktopShell = document.getElementById("desktop-shell");
 const systemSurface = document.getElementById("system-surface");
@@ -171,6 +172,15 @@ const cursorState = {
   targetY: window.innerHeight / 2,
   frameId: 0,
   initialized: false
+};
+const adaptiveOceanState = {
+  currentX: 0,
+  currentY: 0,
+  targetX: 0,
+  targetY: 0,
+  currentScroll: 0,
+  targetScroll: 0,
+  frameId: 0
 };
 
 const projectData = [
@@ -1219,6 +1229,7 @@ function updateAdaptiveShell() {
   setCursorMode(shellMode === "desktop" ? "default" : "hidden");
   moveFishStudioPanel();
   syncTaskbarState();
+  syncAdaptiveOceanBackdrop({ immediate: true });
 }
 
 function moveFishStudioPanel() {
@@ -1228,6 +1239,169 @@ function moveFishStudioPanel() {
 
   if (fishStudioPanel.parentElement !== fishStudioDesktopSlot) {
     fishStudioDesktopSlot.appendChild(fishStudioPanel);
+  }
+}
+
+function getAdaptiveOceanActiveShell(shellMode = body.dataset.shell || getShellMode()) {
+  if (shellMode === "tablet") {
+    return tabletHub;
+  }
+
+  if (shellMode === "mobile") {
+    return mobileHub;
+  }
+
+  return null;
+}
+
+function getAdaptiveOceanScrollOffset(shellEl, shellMode = body.dataset.shell || getShellMode()) {
+  if (!shellEl) {
+    return 0;
+  }
+
+  const maxScroll = shellEl.scrollHeight - shellEl.clientHeight;
+  if (maxScroll <= 0) {
+    return 0;
+  }
+
+  const progress = clamp(shellEl.scrollTop / maxScroll, 0, 1);
+  return progress * (shellMode === "mobile" ? 52 : 36);
+}
+
+function applyAdaptiveOceanMotion({ immediate = false } = {}) {
+  if (!adaptiveOceanBackdrop || !systemSurface) {
+    return false;
+  }
+
+  const shellMode = body.dataset.shell || getShellMode();
+  const motionDisabled = prefersReducedMotion.matches || shellMode === "desktop";
+  const easing = immediate || motionDisabled ? 1 : 0.14;
+  const scrollEasing = immediate || motionDisabled ? 1 : 0.18;
+
+  adaptiveOceanState.currentX += (adaptiveOceanState.targetX - adaptiveOceanState.currentX) * easing;
+  adaptiveOceanState.currentY += (adaptiveOceanState.targetY - adaptiveOceanState.currentY) * easing;
+  adaptiveOceanState.currentScroll += (adaptiveOceanState.targetScroll - adaptiveOceanState.currentScroll) * scrollEasing;
+
+  const pointerX = adaptiveOceanState.currentX;
+  const pointerY = adaptiveOceanState.currentY;
+  const scrollY = adaptiveOceanState.currentScroll;
+
+  systemSurface.style.setProperty("--adaptive-ocean-base-x", `${(pointerX * 0.35).toFixed(2)}px`);
+  systemSurface.style.setProperty("--adaptive-ocean-base-y", `${(pointerY * 0.22 - scrollY * 0.1).toFixed(2)}px`);
+  systemSurface.style.setProperty("--adaptive-ocean-illustration-x", `${(pointerX * 0.9).toFixed(2)}px`);
+  systemSurface.style.setProperty("--adaptive-ocean-illustration-y", `${(pointerY * 0.54 - scrollY * 0.24).toFixed(2)}px`);
+  systemSurface.style.setProperty("--adaptive-ocean-school-x", `${(pointerX * 1.45).toFixed(2)}px`);
+  systemSurface.style.setProperty("--adaptive-ocean-school-y", `${(pointerY * 0.36 - scrollY * 0.4).toFixed(2)}px`);
+  systemSurface.style.setProperty("--adaptive-ocean-reef-x", `${(pointerX * -0.5).toFixed(2)}px`);
+  systemSurface.style.setProperty("--adaptive-ocean-reef-y", `${(pointerY * 0.14 + scrollY * 0.18).toFixed(2)}px`);
+
+  if (motionDisabled) {
+    return false;
+  }
+
+  const remainingX = Math.abs(adaptiveOceanState.targetX - adaptiveOceanState.currentX);
+  const remainingY = Math.abs(adaptiveOceanState.targetY - adaptiveOceanState.currentY);
+  const remainingScroll = Math.abs(adaptiveOceanState.targetScroll - adaptiveOceanState.currentScroll);
+  return remainingX > 0.12 || remainingY > 0.12 || remainingScroll > 0.16;
+}
+
+function renderAdaptiveOceanMotion() {
+  adaptiveOceanState.frameId = 0;
+
+  if (applyAdaptiveOceanMotion()) {
+    adaptiveOceanState.frameId = window.requestAnimationFrame(renderAdaptiveOceanMotion);
+  }
+}
+
+function scheduleAdaptiveOceanMotion({ immediate = false } = {}) {
+  if (immediate) {
+    applyAdaptiveOceanMotion({ immediate: true });
+    return;
+  }
+
+  if (adaptiveOceanState.frameId) {
+    return;
+  }
+
+  adaptiveOceanState.frameId = window.requestAnimationFrame(renderAdaptiveOceanMotion);
+}
+
+function resetAdaptiveOceanPointer() {
+  adaptiveOceanState.targetX = 0;
+  adaptiveOceanState.targetY = 0;
+  scheduleAdaptiveOceanMotion();
+}
+
+function handleAdaptiveOceanPointer(event) {
+  if (!adaptiveOceanBackdrop || prefersReducedMotion.matches || body.dataset.shell !== "tablet") {
+    return;
+  }
+
+  if (event.pointerType === "touch") {
+    return;
+  }
+
+  const bounds = tabletHub?.getBoundingClientRect();
+  if (!bounds || !bounds.width || !bounds.height) {
+    return;
+  }
+
+  const normalizedX = ((event.clientX - bounds.left) / bounds.width) - 0.5;
+  const normalizedY = ((event.clientY - bounds.top) / bounds.height) - 0.5;
+
+  adaptiveOceanState.targetX = clamp(normalizedX * 18, -14, 14);
+  adaptiveOceanState.targetY = clamp(normalizedY * 14, -10, 10);
+  scheduleAdaptiveOceanMotion();
+}
+
+function syncAdaptiveOceanBackdrop({ immediate = false } = {}) {
+  if (!adaptiveOceanBackdrop) {
+    return;
+  }
+
+  const shellMode = body.dataset.shell || getShellMode();
+  const activeShell = getAdaptiveOceanActiveShell(shellMode);
+
+  if (shellMode !== "tablet" || prefersReducedMotion.matches) {
+    adaptiveOceanState.targetX = 0;
+    adaptiveOceanState.targetY = 0;
+  }
+
+  adaptiveOceanState.targetScroll = prefersReducedMotion.matches || !activeShell
+    ? 0
+    : getAdaptiveOceanScrollOffset(activeShell, shellMode);
+
+  if (shellMode === "desktop") {
+    adaptiveOceanState.targetX = 0;
+    adaptiveOceanState.targetY = 0;
+    adaptiveOceanState.targetScroll = 0;
+  }
+
+  scheduleAdaptiveOceanMotion({ immediate });
+}
+
+function bindAdaptiveOceanMotion() {
+  [tabletHub, mobileHub].forEach(shellEl => {
+    if (!shellEl) {
+      return;
+    }
+
+    shellEl.addEventListener("scroll", () => {
+      if (shellEl !== getAdaptiveOceanActiveShell()) {
+        return;
+      }
+
+      adaptiveOceanState.targetScroll = prefersReducedMotion.matches
+        ? 0
+        : getAdaptiveOceanScrollOffset(shellEl);
+      scheduleAdaptiveOceanMotion();
+    }, { passive: true });
+  });
+
+  if (tabletHub) {
+    tabletHub.addEventListener("pointermove", handleAdaptiveOceanPointer, { passive: true });
+    tabletHub.addEventListener("pointerleave", resetAdaptiveOceanPointer);
+    tabletHub.addEventListener("pointercancel", resetAdaptiveOceanPointer);
   }
 }
 
@@ -5246,6 +5420,7 @@ document.addEventListener("pointercancel", () => {
 
 window.addEventListener("blur", () => {
   activeSoundPointerId = null;
+  resetAdaptiveOceanPointer();
   setCursorMode("hidden");
 });
 
@@ -5284,9 +5459,16 @@ renderDesktopIcons();
 initializeFishStudio();
 initializeOceanAmbience();
 renderAdaptiveShells();
+bindAdaptiveOceanMotion();
 bindLaunchers();
 bindContactForms();
 initializeEntryExperience();
 updateAdaptiveShell();
 updateClock();
 window.setInterval(updateClock, 30000);
+
+if (typeof prefersReducedMotion.addEventListener === "function") {
+  prefersReducedMotion.addEventListener("change", () => {
+    syncAdaptiveOceanBackdrop({ immediate: true });
+  });
+}
