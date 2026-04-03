@@ -3436,6 +3436,27 @@ textarea:focus-visible,
   margin: 0 auto;
 }
 
+.case-study-flow.is-focus-view {
+  width: min(100%, 1020px);
+  gap: 24px;
+}
+
+.case-study-flow.is-focus-view .behance-page-frame {
+  border-radius: 32px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.62),
+    0 24px 42px rgba(22, 59, 110, 0.1);
+}
+
+.case-study-flow.is-compact-view {
+  gap: 14px;
+}
+
+.case-study-flow.is-compact-view .window-card,
+.case-study-flow.is-compact-view .detail-image {
+  border-radius: 20px;
+}
+
 .project-primary-cta {
   margin-top: 16px;
 }
@@ -3495,6 +3516,20 @@ textarea:focus-visible,
   border-bottom: 0;
 }
 
+[data-shell-search-item] {
+  transition: opacity 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
+
+[data-shell-search-item].is-search-match {
+  box-shadow:
+    inset 0 0 0 1px rgba(110, 188, 255, 0.26),
+    0 0 0 3px rgba(110, 188, 255, 0.12);
+}
+
+[data-shell-search-item].is-search-dimmed {
+  opacity: 0.42;
+}
+
 .case-study-summary-section h4,
 .narrative-block h3,
 .project-rail h4 {
@@ -3543,10 +3578,8 @@ textarea:focus-visible,
   background: rgba(255, 255, 255, 0.22);
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.22),
-    0 14px 30px rgba(22, 59, 110, 0.16);
-  backdrop-filter: blur(10px) saturate(130%);
-  -webkit-backdrop-filter: blur(10px) saturate(130%);
-  transform: translate(-50%, -50%) scale(0.92);
+    0 10px 20px rgba(22, 59, 110, 0.12);
+  transform: translate3d(-50%, -50%, 0) scale(0.92);
   will-change: left, top, transform, width, height, opacity;
   transition:
     width 180ms ease,
@@ -3595,7 +3628,7 @@ body[data-shell="desktop"] .cursor-glow {
   height: 52px;
   background: rgba(116, 216, 230, 0.18);
   border-color: rgba(17, 96, 150, 0.34);
-  transform: translate(-50%, -50%) scale(1);
+  transform: translate3d(-50%, -50%, 0) scale(1);
 }
 
 .cursor-glow[data-mode="interactive"]::before {
@@ -3626,7 +3659,7 @@ body[data-shell="desktop"] .cursor-glow {
 .cursor-glow[data-mode="text"],
 .cursor-glow[data-mode="hidden"] {
   opacity: 0;
-  transform: translate(-50%, -50%) scale(0.64);
+  transform: translate3d(-50%, -50%, 0) scale(0.64);
 }
 
 @media (pointer: fine) {
@@ -4272,16 +4305,6 @@ body[data-theme="dark"] .desktop-shell {
   color: rgba(12, 45, 66, 0.82);
 }
 
-.hero-fish-note {
-  margin: 12px 0 0;
-  padding: 10px 12px;
-  border: 1px solid rgba(22, 112, 148, 0.14);
-  border-radius: 14px;
-  background: rgba(231, 248, 255, 0.56);
-  line-height: 1.52;
-  color: rgba(10, 58, 82, 0.88);
-}
-
 .profile-widget strong {
   color: #0d3552;
 }
@@ -4572,12 +4595,6 @@ body[data-theme="dark"] .profile-note,
 body[data-theme="dark"] .fish-studio-header p,
 body[data-theme="dark"] .fish-name-field {
   color: rgba(227, 244, 252, 0.82);
-}
-
-body[data-theme="dark"] .hero-fish-note {
-  border-color: rgba(151, 226, 244, 0.18);
-  background: rgba(18, 64, 88, 0.44);
-  color: rgba(234, 248, 255, 0.92);
 }
 
 body[data-theme="dark"] .widget-label {
@@ -4878,9 +4895,25 @@ body[data-theme="dark"] .ocean-illustration {
   place-items: center;
   width: 30px;
   height: 30px;
+  border: 0;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.04);
   color: rgba(245, 247, 252, 0.88);
+  cursor: pointer;
+  transition: background-color 160ms ease, color 160ms ease, opacity 160ms ease;
+}
+
+.shell-icon-button:hover,
+.shell-icon-button:focus-visible,
+.command-chip:hover,
+.command-chip:focus-visible {
+  background: rgba(255, 255, 255, 0.09);
+  outline: none;
+}
+
+.shell-icon-button:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 .shell-address {
@@ -4934,6 +4967,23 @@ body[data-theme="dark"] .ocean-illustration {
   color: rgba(255, 255, 255, 0.64);
 }
 
+.shell-search:focus-within {
+  box-shadow: inset 0 0 0 1px rgba(156, 192, 255, 0.34);
+}
+
+.shell-search-input {
+  width: 100%;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: #f5f8fe;
+  font: inherit;
+}
+
+.shell-search-input::placeholder {
+  color: rgba(255, 255, 255, 0.58);
+}
+
 .window-commandbar {
   display: flex;
   justify-content: space-between;
@@ -4955,10 +5005,12 @@ body[data-theme="dark"] .ocean-illustration {
   align-items: center;
   gap: 6px;
   padding: 6px 10px;
+  border: 0;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.04);
   color: #edf1fa;
   font-size: 0.82rem;
+  cursor: pointer;
 }
 
 .command-chip .ms-icon {

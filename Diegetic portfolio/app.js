@@ -171,7 +171,8 @@ const cursorState = {
   targetX: window.innerWidth / 2,
   targetY: window.innerHeight / 2,
   frameId: 0,
-  initialized: false
+  initialized: false,
+  mode: "hidden"
 };
 const adaptiveOceanState = {
   currentX: 0,
@@ -625,10 +626,6 @@ function getResidentGuideLines() {
     },
     {
       target: "workspace",
-      message: "On laptop view, the Ocean Studio lets you sketch a custom fish on the canvas and add it to the reef as your mark on the portfolio."
-    },
-    {
-      target: "workspace",
       message: "Open whatever catches your eye. Nothing here needs to be followed in order."
     },
     {
@@ -656,10 +653,6 @@ const appContent = {
           <p class="tagline">
             This portfolio is designed like a desktop so visitors can move through the work
             the same way ideas usually unfold: non-linearly, by opening one thread at a time.
-          </p>
-          <p class="tagline">
-            In the laptop view, the Ocean Studio adds a more personal interaction: visitors can use the fish canvas
-            to sketch a custom fish, give it a name, and send it into the reef to leave a small mark on my portfolio.
           </p>
           <div class="contact-links">
             ${renderInternalButton("projects", "Open all works", "&#xE8B7;")}
@@ -4348,48 +4341,75 @@ function buildProjectDefinition(project) {
   const images = project.detailImages.slice(0, 6);
   const figureCaptions = buildFigureCaptions(project);
   const heroImage = images[0];
-  const storyImages = images.slice(1);
-  const storyPagesMarkup = storyImages.map((image, index) => `
-    <figure class="project-figure behance-page">
-      <div class="detail-image behance-page-frame">
-        <img src="${escapeAttribute(image)}" alt="${escapeAttribute(figureCaptions[index + 1].alt)}" loading="lazy">
-      </div>
-    </figure>
-  `).join("");
 
   return {
+    projectId: project.id,
+    resourceUrl: project.url,
     title: project.title,
     subtitle: project.category,
     size: { width: 1180, height: 780 },
     iconImage: project.coverImage,
-    render: () => `
-      <article class="case-study-flow">
-        <section class="window-card case-study-intro-card">
+    render: (state = {}) => {
+      const sortMode = state.sortMode === "reverse" ? "reverse" : "default";
+      const viewMode = state.viewMode || "default";
+      const storyPages = images
+        .slice(1)
+        .map((image, index) => ({
+          image,
+          caption: figureCaptions[index + 1]
+        }));
+      const visibleStoryPages = sortMode === "reverse" ? [...storyPages].reverse() : storyPages;
+      const introCopy = buildProjectIntro(project);
+      const visualNarrative = buildVisualNarrative(project);
+      const projectDepth = buildProjectDepth(project);
+      const storyPagesMarkup = visibleStoryPages.map(({ image, caption }) => `
+        <figure
+          class="project-figure behance-page"
+          data-shell-search-item
+          data-search-text="${escapeAttribute(`${caption.alt} ${caption.caption}`)}"
+        >
+          <div class="detail-image behance-page-frame">
+            <img src="${escapeAttribute(image)}" alt="${escapeAttribute(caption.alt)}" loading="lazy">
+          </div>
+        </figure>
+      `).join("");
+
+      return `
+      <article class="case-study-flow${viewMode === "focus" ? " is-focus-view" : ""}${viewMode === "compact" ? " is-compact-view" : ""}">
+        <section
+          class="window-card case-study-intro-card"
+          data-shell-search-item
+          data-search-text="${escapeAttribute(`${project.category} ${project.title} ${project.overview} ${introCopy}`)}"
+        >
           <p class="eyebrow">${escapeHtml(project.category)}</p>
           <h2 class="headline">${escapeHtml(project.title)}</h2>
           <p class="lede">${escapeHtml(project.overview)}</p>
-          <p class="tagline">${escapeHtml(buildProjectIntro(project))}</p>
+          <p class="tagline">${escapeHtml(introCopy)}</p>
           <div class="project-primary-cta">
             ${renderExternalLink(project.url, "View this project on Behance", "&#xE8A7;")}
           </div>
         </section>
 
-        <figure class="project-figure behance-page behance-page-hero">
+        <figure
+          class="project-figure behance-page behance-page-hero"
+          data-shell-search-item
+          data-search-text="${escapeAttribute(figureCaptions[0].alt)}"
+        >
           <div class="detail-image behance-page-frame behance-page-frame-hero">
             <img src="${escapeAttribute(heroImage)}" alt="${escapeAttribute(figureCaptions[0].alt)}" loading="eager">
           </div>
         </figure>
 
-        <section class="window-card case-study-summary-card">
-          <article class="case-study-summary-section">
+        <section class="window-card case-study-summary-card" data-shell-search-item data-search-text="${escapeAttribute(`${project.challenge} ${project.process} ${project.outcome}`)}">
+          <article class="case-study-summary-section" data-shell-search-item data-search-text="${escapeAttribute(`Challenge ${project.challenge}`)}">
             <h4>Challenge</h4>
             <p>${escapeHtml(project.challenge)}</p>
           </article>
-          <article class="case-study-summary-section">
+          <article class="case-study-summary-section" data-shell-search-item data-search-text="${escapeAttribute(`Process ${project.process}`)}">
             <h4>Process</h4>
             <p>${escapeHtml(project.process)}</p>
           </article>
-          <article class="case-study-summary-section">
+          <article class="case-study-summary-section" data-shell-search-item data-search-text="${escapeAttribute(`Outcome ${project.outcome}`)}">
             <h4>Outcome</h4>
             <p>${escapeHtml(project.outcome)}</p>
           </article>
@@ -4401,14 +4421,22 @@ function buildProjectDefinition(project) {
           </section>
         ` : ""}
 
-        <section class="window-card narrative-block">
+        <section
+          class="window-card narrative-block"
+          data-shell-search-item
+          data-search-text="${escapeAttribute(`${visualNarrative} ${projectDepth}`)}"
+        >
           <p class="eyebrow">Project walkthrough</p>
           <h3>What the visuals communicate</h3>
-          <p>${escapeHtml(buildVisualNarrative(project))}</p>
-          <p>${escapeHtml(buildProjectDepth(project))}</p>
+          <p>${escapeHtml(visualNarrative)}</p>
+          <p>${escapeHtml(projectDepth)}</p>
         </section>
 
-        <section class="window-card case-study-tools-card">
+        <section
+          class="window-card case-study-tools-card"
+          data-shell-search-item
+          data-search-text="${escapeAttribute(project.tools.join(" "))}"
+        >
           <p class="eyebrow">Tools and focus</p>
           <div class="tag-row">
             ${project.tools.map(tool => `<span class="tag-pill">${escapeHtml(tool)}</span>`).join("")}
@@ -4416,7 +4444,8 @@ function buildProjectDefinition(project) {
         </section>
 
       </article>
-    `
+    `;
+    }
   };
 }
 
@@ -4520,14 +4549,349 @@ function getWindowShellModel(definition, taskbarKey, registryKey) {
   };
 }
 
+function normalizeShellActionLabel(label) {
+  return String(label)
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function createWindowShellState(definition, shellModel, registryKey, taskbarKey) {
+  return {
+    registryKey,
+    taskbarKey,
+    projectId: definition.projectId || "",
+    resourceUrl: definition.resourceUrl || "",
+    sortMode: "default",
+    viewMode: "default",
+    searchQuery: "",
+    detailsLabel: shellModel.detailsLabel,
+    lastSearchCount: 0,
+    statusTimer: 0
+  };
+}
+
+function getAdjacentProjectId(projectId, direction = 1) {
+  const currentIndex = projectData.findIndex(project => project.id === projectId);
+  if (currentIndex === -1) {
+    return "";
+  }
+
+  return projectData[currentIndex + direction]?.id || "";
+}
+
+function syncWindowShellStatus(windowEl, shellState) {
+  const statusEl = windowEl.querySelector("[data-shell-status]");
+  if (!statusEl) {
+    return;
+  }
+
+  if (shellState.searchQuery.trim()) {
+    statusEl.textContent = shellState.lastSearchCount
+      ? `${shellState.lastSearchCount} match${shellState.lastSearchCount === 1 ? "" : "es"}`
+      : "No matches";
+    return;
+  }
+
+  const parts = [shellState.detailsLabel];
+  if (shellState.sortMode === "reverse") {
+    parts.push("Reverse order");
+  }
+  if (shellState.viewMode === "focus") {
+    parts.push("Focus view");
+  } else if (shellState.viewMode === "compact") {
+    parts.push("Compact view");
+  }
+  statusEl.textContent = parts.join(" / ");
+}
+
+function announceWindowShellStatus(windowEl, shellState, message, duration = 1600) {
+  const statusEl = windowEl.querySelector("[data-shell-status]");
+  if (!statusEl) {
+    return;
+  }
+
+  window.clearTimeout(shellState.statusTimer);
+  statusEl.textContent = message;
+  shellState.statusTimer = window.setTimeout(() => {
+    syncWindowShellStatus(windowEl, shellState);
+  }, duration);
+}
+
+function getShellSearchTargets(windowEl, shellState) {
+  if (shellState.projectId) {
+    return Array.from(windowEl.querySelectorAll("[data-shell-search-item]"));
+  }
+
+  if (shellState.taskbarKey === "projects") {
+    return Array.from(windowEl.querySelectorAll(".project-card"));
+  }
+
+  return Array.from(windowEl.querySelectorAll(".window-body > *"));
+}
+
+function applyWindowShellSearch(windowEl, shellState) {
+  const query = shellState.searchQuery.trim().toLowerCase();
+  const targets = getShellSearchTargets(windowEl, shellState);
+  let matchCount = 0;
+
+  targets.forEach(target => {
+    const haystack = (target.dataset.searchText || target.textContent || "").toLowerCase();
+    const matches = !query || haystack.includes(query);
+
+    target.classList.toggle("is-search-match", Boolean(query) && matches);
+    target.classList.toggle("is-search-dimmed", Boolean(query) && !matches);
+
+    if (shellState.taskbarKey === "projects" && target.classList.contains("project-card")) {
+      target.hidden = Boolean(query) && !matches;
+    }
+
+    if (matches) {
+      matchCount += 1;
+    }
+  });
+
+  shellState.lastSearchCount = query ? matchCount : 0;
+  syncWindowShellStatus(windowEl, shellState);
+}
+
+function rerenderWindowBody(windowEl, definition, shellState) {
+  const bodyEl = windowEl.querySelector(".window-body");
+  if (!bodyEl) {
+    return;
+  }
+
+  bodyEl.innerHTML = definition.render(shellState);
+  bindLaunchers(windowEl);
+  bindContactForms(windowEl);
+  bindProjectCards(windowEl);
+  applyWindowShellSearch(windowEl, shellState);
+}
+
+function focusOrCreateAppWindow(appKey) {
+  createWindow(appKey);
+  return windowRegistry.get(appKey) || null;
+}
+
+async function shareWindowResource(shellState) {
+  const shareUrl = shellState.resourceUrl || window.location.href;
+  const shareText = shareUrl || shellState.registryKey;
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: document.title, url: shareUrl });
+      return "Shared";
+    } catch (error) {
+      if (error && error.name === "AbortError") {
+        return "";
+      }
+    }
+  }
+
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(shareText);
+      return "Link copied";
+    } catch {
+      // Fall back to opening the share target when clipboard access is blocked.
+    }
+  }
+
+  window.open(shareUrl, "_blank", "noopener,noreferrer");
+  return "Opened share link";
+}
+
+function updateWindowShellAvailability(windowEl, shellState) {
+  const backButton = windowEl.querySelector('[data-shell-nav="back"]');
+  const forwardButton = windowEl.querySelector('[data-shell-nav="forward"]');
+  const upButton = windowEl.querySelector('[data-shell-nav="up"]');
+
+  if (backButton) {
+    backButton.disabled = !shellState.projectId && shellState.taskbarKey === "home";
+  }
+
+  if (forwardButton) {
+    forwardButton.disabled = !getAdjacentProjectId(shellState.projectId, 1);
+  }
+
+  if (upButton) {
+    upButton.disabled = !shellState.projectId && shellState.taskbarKey === "home";
+  }
+}
+
+function bindWindowShell(windowEl, { definition, registryKey, taskbarKey, shellModel }) {
+  const shellState = createWindowShellState(definition, shellModel, registryKey, taskbarKey);
+  const searchInput = windowEl.querySelector(".shell-search-input");
+
+  updateWindowShellAvailability(windowEl, shellState);
+  syncWindowShellStatus(windowEl, shellState);
+
+  windowEl.querySelectorAll("[data-shell-nav]").forEach(button => {
+    button.addEventListener("click", () => {
+      const action = button.dataset.shellNav;
+
+      if (action === "refresh") {
+        rerenderWindowBody(windowEl, definition, shellState);
+        announceWindowShellStatus(windowEl, shellState, "Refreshed");
+        return;
+      }
+
+      if (action === "back") {
+        if (shellState.projectId) {
+          focusOrCreateAppWindow("projects");
+          closeWindow(registryKey, 140);
+          return;
+        }
+
+        if (taskbarKey !== "home") {
+          focusOrCreateAppWindow("home");
+          closeWindow(registryKey, 140);
+          return;
+        }
+
+        announceWindowShellStatus(windowEl, shellState, "No previous location");
+        return;
+      }
+
+      if (action === "forward") {
+        const nextProjectId = getAdjacentProjectId(shellState.projectId, 1);
+        if (nextProjectId) {
+          openProjectWindow(nextProjectId);
+          closeWindow(registryKey, 140);
+          return;
+        }
+
+        announceWindowShellStatus(windowEl, shellState, "No next work");
+        return;
+      }
+
+      if (action === "up") {
+        if (shellState.projectId) {
+          focusOrCreateAppWindow("projects");
+          closeWindow(registryKey, 140);
+          return;
+        }
+
+        if (taskbarKey !== "home") {
+          focusOrCreateAppWindow("home");
+          closeWindow(registryKey, 140);
+          return;
+        }
+
+        announceWindowShellStatus(windowEl, shellState, "Already at the top");
+      }
+    });
+  });
+
+  if (searchInput) {
+    searchInput.addEventListener("input", () => {
+      shellState.searchQuery = searchInput.value;
+      applyWindowShellSearch(windowEl, shellState);
+    });
+
+    searchInput.addEventListener("keydown", event => {
+      if (event.key !== "Enter") {
+        return;
+      }
+
+      const firstMatch = windowEl.querySelector(".is-search-match");
+      if (firstMatch) {
+        firstMatch.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    });
+  }
+
+  windowEl.querySelectorAll("[data-shell-command]").forEach(button => {
+    button.addEventListener("click", async () => {
+      const action = button.dataset.shellCommand;
+
+      if (action === "open") {
+        const targetUrl = shellState.resourceUrl;
+        if (targetUrl) {
+          window.open(targetUrl, "_blank", "noopener,noreferrer");
+          announceWindowShellStatus(windowEl, shellState, "Opened source");
+          return;
+        }
+
+        const firstLauncher = windowEl.querySelector(".window-body a, .window-body button[data-app-launch], .window-body button[data-project-launch]");
+        if (firstLauncher instanceof HTMLElement) {
+          firstLauncher.click();
+          announceWindowShellStatus(windowEl, shellState, "Opened");
+          return;
+        }
+
+        announceWindowShellStatus(windowEl, shellState, "Nothing to open");
+        return;
+      }
+
+      if (action === "sort") {
+        if (!shellState.projectId) {
+          announceWindowShellStatus(windowEl, shellState, "Sort is available in work details");
+          return;
+        }
+
+        shellState.sortMode = shellState.sortMode === "default" ? "reverse" : "default";
+        rerenderWindowBody(windowEl, definition, shellState);
+        syncWindowShellStatus(windowEl, shellState);
+        return;
+      }
+
+      if (action === "view") {
+        if (!shellState.projectId) {
+          announceWindowShellStatus(windowEl, shellState, "View options are available in work details");
+          return;
+        }
+
+        shellState.viewMode = shellState.viewMode === "default"
+          ? "focus"
+          : shellState.viewMode === "focus"
+            ? "compact"
+            : "default";
+        rerenderWindowBody(windowEl, definition, shellState);
+        syncWindowShellStatus(windowEl, shellState);
+        return;
+      }
+
+      if (action === "share") {
+        try {
+          const shareStatus = await shareWindowResource(shellState);
+          if (shareStatus) {
+            announceWindowShellStatus(windowEl, shellState, shareStatus);
+          }
+        } catch {
+          announceWindowShellStatus(windowEl, shellState, "Share failed");
+        }
+        return;
+      }
+
+      if (action === "filter" || action === "browse") {
+        searchInput?.focus();
+        announceWindowShellStatus(windowEl, shellState, "Search is ready");
+        return;
+      }
+
+      announceWindowShellStatus(windowEl, shellState, `${button.textContent.trim()} is ready next`);
+    });
+  });
+}
+
 function renderWindowShell(model) {
+  const shellNavButtons = [
+    { action: "back", icon: "&#xE72B;", label: "Go back" },
+    { action: "forward", icon: "&#xE72A;", label: "Go forward" },
+    { action: "up", icon: "&#xE74A;", label: "Go up" },
+    { action: "refresh", icon: "&#xE72C;", label: "Refresh" }
+  ];
+
   return `
-    <div class="window-shellbar" aria-hidden="true">
+    <div class="window-shellbar">
       <div class="shell-nav">
-        <span class="shell-icon-button">${renderUiIcon("&#xE72B;")}</span>
-        <span class="shell-icon-button">${renderUiIcon("&#xE72A;")}</span>
-        <span class="shell-icon-button">${renderUiIcon("&#xE74A;")}</span>
-        <span class="shell-icon-button">${renderUiIcon("&#xE72C;")}</span>
+        ${shellNavButtons.map(button => `
+          <button class="shell-icon-button" type="button" data-shell-nav="${button.action}" aria-label="${escapeAttribute(button.label)}">
+            ${renderUiIcon(button.icon)}
+          </button>
+        `).join("")}
       </div>
       <div class="shell-address">
         <span class="shell-crumb shell-crumb-home">
@@ -4538,21 +4902,28 @@ function renderWindowShell(model) {
           <span class="shell-crumb">${escapeHtml(crumb)}</span>
         `).join("")}
       </div>
-      <div class="shell-search">
+      <label class="shell-search">
         ${renderUiIcon("&#xE721;")}
-        <span>${escapeHtml(model.searchLabel)}</span>
-      </div>
+        <input
+          class="shell-search-input"
+          type="search"
+          spellcheck="false"
+          autocomplete="off"
+          placeholder="${escapeAttribute(model.searchLabel)}"
+          aria-label="${escapeAttribute(model.searchLabel)}"
+        >
+      </label>
     </div>
-    <div class="window-commandbar" aria-hidden="true">
+    <div class="window-commandbar">
       <div class="command-group">
         ${model.commands.map(command => `
-          <span class="command-chip">
+          <button class="command-chip" type="button" data-shell-command="${escapeAttribute(normalizeShellActionLabel(command))}">
             ${renderUiIcon("&#xE710;")}
             <span>${escapeHtml(command)}</span>
-          </span>
+          </button>
         `).join("")}
       </div>
-      <span class="command-details">${escapeHtml(model.detailsLabel)}</span>
+      <span class="command-details" data-shell-status>${escapeHtml(model.detailsLabel)}</span>
     </div>
   `;
 }
@@ -4617,6 +4988,7 @@ function createWindow(appKey, options = {}) {
   focusWindow(windowEl);
   windowEl.focus();
   bindWindowControls(windowEl, registryKey);
+  bindWindowShell(windowEl, { definition, registryKey, taskbarKey, shellModel });
   bindLaunchers(windowEl);
   bindContactForms(windowEl);
   bindProjectCards(windowEl);
@@ -5286,7 +5658,17 @@ function setCursorMode(mode = "default") {
     return;
   }
 
+  if (cursorState.mode === mode) {
+    return;
+  }
+
+  cursorState.mode = mode;
   cursorGlow.dataset.mode = mode;
+}
+
+function syncCursorVisualPosition(clientX, clientY) {
+  cursorGlow.style.left = `${clientX}px`;
+  cursorGlow.style.top = `${clientY}px`;
 }
 
 function renderCursorGlowFollow() {
@@ -5295,32 +5677,11 @@ function renderCursorGlowFollow() {
   }
 
   cursorState.frameId = 0;
-  const shellMode = body.dataset.shell || getShellMode();
-  const shouldSnap = prefersReducedMotion.matches || shellMode !== "desktop";
-  const deltaX = cursorState.targetX - cursorState.currentX;
-  const deltaY = cursorState.targetY - cursorState.currentY;
+  cursorState.currentX = cursorState.targetX;
+  cursorState.currentY = cursorState.targetY;
+  cursorState.initialized = true;
 
-  if (shouldSnap || !cursorState.initialized) {
-    cursorState.currentX = cursorState.targetX;
-    cursorState.currentY = cursorState.targetY;
-    cursorState.initialized = true;
-  } else {
-    const distance = Math.hypot(deltaX, deltaY);
-    const easing = distance > 180 ? 0.48 : 0.34;
-    cursorState.currentX += deltaX * easing;
-    cursorState.currentY += deltaY * easing;
-  }
-
-  cursorGlow.style.left = `${cursorState.currentX}px`;
-  cursorGlow.style.top = `${cursorState.currentY}px`;
-
-  if (!shouldSnap) {
-    const remainingX = cursorState.targetX - cursorState.currentX;
-    const remainingY = cursorState.targetY - cursorState.currentY;
-    if (Math.abs(remainingX) > 0.2 || Math.abs(remainingY) > 0.2) {
-      cursorState.frameId = window.requestAnimationFrame(renderCursorGlowFollow);
-    }
-  }
+  syncCursorVisualPosition(cursorState.currentX, cursorState.currentY);
 }
 
 function updateCursorGlowPosition(clientX, clientY, { immediate = false } = {}) {
@@ -5331,21 +5692,18 @@ function updateCursorGlowPosition(clientX, clientY, { immediate = false } = {}) 
   cursorState.targetX = clientX;
   cursorState.targetY = clientY;
 
-  if (immediate) {
-    cursorState.currentX = clientX;
-    cursorState.currentY = clientY;
-    cursorState.initialized = true;
-    cursorGlow.style.left = `${clientX}px`;
-    cursorGlow.style.top = `${clientY}px`;
-    if (cursorState.frameId) {
-      window.cancelAnimationFrame(cursorState.frameId);
-      cursorState.frameId = 0;
-    }
-    return;
+  cursorState.currentX = clientX;
+  cursorState.currentY = clientY;
+  cursorState.initialized = true;
+  syncCursorVisualPosition(clientX, clientY);
+
+  if (cursorState.frameId) {
+    window.cancelAnimationFrame(cursorState.frameId);
+    cursorState.frameId = 0;
   }
 
-  if (!cursorState.frameId) {
-    renderCursorGlowFollow();
+  if (immediate) {
+    return;
   }
 }
 
@@ -5380,8 +5738,25 @@ taskbarButtons.forEach(button => {
 document.addEventListener("pointermove", event => {
   if (!cursorGlow) return;
   updateCursorGlowPosition(event.clientX, event.clientY);
+}, { passive: true });
+
+document.addEventListener("pointerover", event => {
+  if (!cursorGlow) return;
   setCursorMode(getCursorMode(event.target));
 }, { passive: true });
+
+document.addEventListener("focusin", event => {
+  if (!cursorGlow) return;
+  setCursorMode(getCursorMode(event.target));
+});
+
+document.addEventListener("focusout", () => {
+  if (!cursorGlow || (body.dataset.shell || getShellMode()) !== "desktop") {
+    return;
+  }
+
+  setCursorMode("default");
+});
 
 document.addEventListener("pointerdown", () => {
   unlockOceanAmbience();
