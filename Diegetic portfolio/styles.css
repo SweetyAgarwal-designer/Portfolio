@@ -4272,6 +4272,16 @@ body[data-theme="dark"] .desktop-shell {
   color: rgba(12, 45, 66, 0.82);
 }
 
+.hero-fish-note {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(22, 112, 148, 0.14);
+  border-radius: 14px;
+  background: rgba(231, 248, 255, 0.56);
+  line-height: 1.52;
+  color: rgba(10, 58, 82, 0.88);
+}
+
 .profile-widget strong {
   color: #0d3552;
 }
@@ -4562,6 +4572,12 @@ body[data-theme="dark"] .profile-note,
 body[data-theme="dark"] .fish-studio-header p,
 body[data-theme="dark"] .fish-name-field {
   color: rgba(227, 244, 252, 0.82);
+}
+
+body[data-theme="dark"] .hero-fish-note {
+  border-color: rgba(151, 226, 244, 0.18);
+  background: rgba(18, 64, 88, 0.44);
+  color: rgba(234, 248, 255, 0.92);
 }
 
 body[data-theme="dark"] .widget-label {

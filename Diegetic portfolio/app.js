@@ -625,6 +625,10 @@ function getResidentGuideLines() {
     },
     {
       target: "workspace",
+      message: "On laptop view, the Ocean Studio lets you sketch a custom fish on the canvas and add it to the reef as your mark on the portfolio."
+    },
+    {
+      target: "workspace",
       message: "Open whatever catches your eye. Nothing here needs to be followed in order."
     },
     {
@@ -652,6 +656,10 @@ const appContent = {
           <p class="tagline">
             This portfolio is designed like a desktop so visitors can move through the work
             the same way ideas usually unfold: non-linearly, by opening one thread at a time.
+          </p>
+          <p class="tagline">
+            In the laptop view, the Ocean Studio adds a more personal interaction: visitors can use the fish canvas
+            to sketch a custom fish, give it a name, and send it into the reef to leave a small mark on my portfolio.
           </p>
           <div class="contact-links">
             ${renderInternalButton("projects", "Open all works", "&#xE8B7;")}
